@@ -1,1 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HMWK 1 · Statistics & Cybersecurity</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="bg-gradient"></div>
+
+  <header class="site-header container">
+    <a class="brand" href="index.html">📊 Statistics</a>
+    <nav class="nav">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="hmwk1.html" class="nav-link active">HMWK 1</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="post glass">
+      <div class="post-meta">
+        <span class="badge">HMWK 1</span>
+        <span>—</span>
+        <span>Short Research</span>
+      </div>
+      <h1>What is Statistics, and why can it be useful for Cybersecurity?</h1>
+
+      <h2>Definition (brief)</h2>
+      <p><em>Statistics</em> studies how to collect, summarize, analyze and infer from data under uncertainty. It provides tools (descriptive & inferential) to turn raw data into reliable insight and decisions.</p>
+
+      <h2>Why it matters for Cybersecurity</h2>
+      <ul>
+        <li><strong>Anomaly detection:</strong> model “normal” traffic (distributions, baselines) and flag outliers for possible intrusions.</li>
+        <li><strong>Threat scoring:</strong> estimate probabilities (e.g., Bayes) and false-positive/false-negative trade-offs.</li>
+        <li><strong>Monitoring efficacy:</strong> hypothesis tests/intervals to evaluate if a control actually reduces incidents.</li>
+        <li><strong>Incident forensics:</strong> summarize logs at scale (sampling, aggregation) to reconstruct events.</li>
+        <li><strong>Risk models:</strong> quantify frequency/severity; fit distributions; simulate scenarios.</li>
+      </ul>
+
+      <h2>Mini example</h2>
+      <p>Given daily failed-login counts, build a baseline (mean ± k·σ). Days beyond the threshold trigger review. Tune <code>k</code> to balance sensitivity vs. noise.</p>
+
+      <hr />
+      <p class="back"><a href="index.html">← Back to all homework</a></p>
+    </article>
+  </main>
+
+  <footer class="site-footer container">
+    <p>© <span id="y"></span> Statistics Homework · <strong>Anastasiia Baranovska</strong></p>
+  </footer>
+
+  <script>
+    document.getElementById('y').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
 

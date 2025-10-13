@@ -1,1 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Statistics – Homework Collection</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="bg-gradient"></div>
 
+  <header class="site-header container">
+    <a class="brand" href="index.html">📊 Statistics</a>
+    <nav class="nav">
+      <a href="index.html" class="nav-link active">Home</a>
+      <a href="hmwk1.html" class="nav-link">HMWK 1</a>
+      <!-- aggiungerai qui HMWK 2/3/… -->
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="hero glass">
+        <h1>Homework & Research Hub</h1>
+        <p>All assignments of the Statistics course, neatly organized. Each homework lives on its own page.</p>
+        <p><strong>Created by: Anastasiia Baranovska</strong></p>
+    </section>      
+
+    <section class="grid">
+      <!-- Card HMWK 1 -->
+      <a class="card" href="hmwk1.html">
+        <div class="card-badge">HMWK 1</div>
+        <h3>What is Statistics & why it matters in Cybersecurity</h3>
+        <p>Short research post exploring definitions, examples, and use-cases.</p>
+        <span class="card-cta">Read post →</span>
+      </a>
+
+      <!-- Esempi di placeholder per futuri compiti -->
+      <div class="card card-disabled">
+        <div class="card-badge">HMWK 2</div>
+        <h3>Coming soon</h3>
+        <p>Will be published after next class.</p>
+        <span class="card-cta">—</span>
+      </div>
+
+      <div class="card card-disabled">
+        <div class="card-badge">HMWK 3</div>
+        <h3>Coming soon</h3>
+        <p>Stay tuned.</p>
+        <span class="card-cta">—</span>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer container">
+    <p>© <span id="y"></span> Statistics Homework · <strong>Anastasiia Baranovska</strong></p>
+  </footer>
+
+  <script>
+    document.getElementById('y').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
