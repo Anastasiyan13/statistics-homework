@@ -22,31 +22,91 @@
 
   <main class="container">
     <article class="post glass">
-      <div class="post-meta">
-        <span class="badge">HMWK 1</span>
-        <span>—</span>
-        <span>Short Research</span>
-      </div>
-      <h1>What is Statistics, and why can it be useful for Cybersecurity?</h1>
-
-      <h2>Definition (brief)</h2>
-      <p><em>Statistics</em> studies how to collect, summarize, analyze and infer from data under uncertainty. It provides tools (descriptive & inferential) to turn raw data into reliable insight and decisions.</p>
-
-      <h2>Why it matters for Cybersecurity</h2>
-      <ul>
-        <li><strong>Anomaly detection:</strong> model “normal” traffic (distributions, baselines) and flag outliers for possible intrusions.</li>
-        <li><strong>Threat scoring:</strong> estimate probabilities (e.g., Bayes) and false-positive/false-negative trade-offs.</li>
-        <li><strong>Monitoring efficacy:</strong> hypothesis tests/intervals to evaluate if a control actually reduces incidents.</li>
-        <li><strong>Incident forensics:</strong> summarize logs at scale (sampling, aggregation) to reconstruct events.</li>
-        <li><strong>Risk models:</strong> quantify frequency/severity; fit distributions; simulate scenarios.</li>
-      </ul>
-
-      <h2>Mini example</h2>
-      <p>Given daily failed-login counts, build a baseline (mean ± k·σ). Days beyond the threshold trigger review. Tune <code>k</code> to balance sensitivity vs. noise.</p>
-
-      <hr />
-      <p class="back"><a href="index.html">← Back to all homework</a></p>
-    </article>
+        <div class="post-meta">
+          <span class="badge">HMWK 1</span>
+          <span>—</span>
+          <span>Short Research</span>
+        </div>
+      
+        <h1>What is Statistics, and why can it be useful for Cybersecurity?</h1>
+      
+        <h2>Definition</h2>
+        <p>
+          <strong>Statistics</strong> is the discipline that
+          <em>collects, summarizes, analyzes and draws inferences from data under uncertainty</em>.
+          It includes <strong>descriptive</strong> tools (e.g., means, variability, distributions)
+          and <strong>inferential</strong> tools (e.g., confidence intervals, hypothesis tests, Bayesian reasoning)
+          to turn raw data into reliable decisions.
+          <a href="https://www.britannica.com/science/statistics" target="_blank">[Encyclopaedia Britannica]</a>
+        </p>
+      
+        <h2>Why Statistics matters for Cybersecurity</h2>
+        <ul>
+          <li>
+            <strong>Anomaly detection:</strong> build baselines of “normal” behavior and flag outliers in logs,
+            network flows, or user actions.
+            <a href="https://csrc.nist.gov/glossary/term/behavioral_anomaly_detection" target="_blank">[NIST Glossary]</a>
+          </li>
+          <li>
+            <strong>Tuning detection thresholds:</strong> use probability distributions and trade-offs between
+            false positives and false negatives to balance noise vs. missed attacks.
+          </li>
+          <li>
+            <strong>Measuring control effectiveness:</strong> hypothesis tests and confidence intervals
+            help assess whether a new control (e.g., email filter) actually reduces incidents.
+          </li>
+          <li>
+            <strong>Risk quantification:</strong> model frequency and severity of attacks with fitted distributions,
+            simulate scenarios, and prioritize mitigations.
+            <a href="https://www.enisa.europa.eu/topics/threat-risk-management/threats-and-trends" target="_blank">[ENISA Threat Landscape]</a>
+          </li>
+          <li>
+            <strong>Scalable forensics:</strong> sampling, aggregation, and outlier analysis allow investigators
+            to summarize large volumes of telemetry and reconstruct incidents faster.
+          </li>
+        </ul>
+      
+        <h2>Mini Example</h2>
+        <p>
+          You track daily <strong>failed-login counts</strong>. Compute a baseline using mean and standard deviation.
+          Flag days exceeding <code>mean + 3σ</code> for review.
+          Adjust the threshold to trade sensitivity against noise.
+        </p>
+      
+        <h2>Key Concepts</h2>
+        <ul>
+          <li><strong>Descriptive statistics:</strong> summarize past data (central tendency, variability, distribution).
+            <a href="https://www.investopedia.com/terms/d/descriptive_statistics.asp" target="_blank">[Investopedia]</a>
+          </li>
+          <li><strong>Inferential statistics:</strong> generalize from samples to populations; estimate effects and test hypotheses.</li>
+        </ul>
+      
+        <h2>References</h2>
+        <ol>
+          <li>
+            <a href="https://www.britannica.com/science/statistics" target="_blank">Encyclopaedia Britannica – “Statistics”</a>
+          </li>
+          <li>
+            <a href="https://csrc.nist.gov/glossary/term/behavioral_anomaly_detection" target="_blank">NIST Glossary – Behavioral Anomaly Detection</a>
+          </li>
+          <li>
+            <a href="https://www.nist.gov/blogs/manufacturing-innovation-blog/detecting-abnormal-cyber-behavior-cyberattack" target="_blank">
+              NIST Blog – Detecting abnormal cyber behavior before a cyberattack
+            </a>
+          </li>
+          <li>
+            <a href="https://www.enisa.europa.eu/topics/threat-risk-management/threats-and-trends" target="_blank">
+              ENISA Threat Landscape (2024)
+            </a>
+          </li>
+          <li>
+            <a href="https://www.investopedia.com/terms/d/descriptive_statistics.asp" target="_blank">Investopedia – Descriptive Statistics</a>
+          </li>
+        </ol>
+      
+        <hr />
+        <p class="back"><a href="index.html">← Back to all homework</a></p>
+      </article>      
   </main>
 
   <footer class="site-footer container">

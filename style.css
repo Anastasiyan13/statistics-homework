@@ -119,4 +119,17 @@
   img{max-width:100%; border-radius:12px}
   ul{padding-left:1.1rem}
   hr{border:0; height:1px; background:var(--glass-brd); margin:24px 0}
+ 
+
+  .post a {
+    color: #7aa2ff;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(122,162,255,0.3);
+    transition: 0.2s;
+  }
+  
+  .post a:hover {
+    color: #a4c1ff;
+    border-color: rgba(122,162,255,0.6);
+  }
   
