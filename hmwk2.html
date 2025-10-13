@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HMWK 2 · Dataset & Distribution</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="bg-gradient"></div>
+
+  <header class="site-header container">
+    <a class="brand" href="index.html">📊 Statistics</a>
+    <nav class="nav">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="hmwk1.html" class="nav-link">HMWK 1</a>
+      <a href="hmwk2.html" class="nav-link active">HMWK 2</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="post glass">
+      <div class="post-meta">
+        <span class="badge">HMWK 2</span>
+        <span>—</span>
+        <span>Dataset & Distribution</span>
+      </div>
+      <h1>Understanding Datasets and Distributions</h1>
+
+      <h2>1️⃣ What is a Dataset?</h2>
+      <p>
+        A <strong>dataset</strong> is a structured collection of data organized in rows (observations)
+        and columns (variables). Each row represents one case, while each column represents a measurable attribute.
+        In this homework, we created a small dataset of students with the following variables:
+      </p>
+      <ul>
+        <li><strong>major</strong> – study area (e.g. CS, Math, Other)</li>
+        <li><strong>study_hours</strong> – weekly study time</li>
+        <li><strong>exam_grade</strong> – exam score (18–30)</li>
+      </ul>
+
+      <h2>2️⃣ Database creation (PostgreSQL)</h2>
+        <p>
+        The dataset was created locally using <strong>PostgreSQL</strong> inside Visual Studio Code via SQLTools.
+        The goal was to simulate a small population of students with their study time and exam grades.
+        </p>
+
+        <h3>Step 1 – Create the table</h3>
+        <pre><code>DROP TABLE IF EXISTS students_study;
+        CREATE TABLE students_study (
+        id SERIAL PRIMARY KEY,
+        student_code TEXT,
+        major TEXT,
+        study_hours INT,
+        exam_grade INT
+        );</code></pre>
+        <p>This table stores a tiny sample of students (id, code, major, weekly study time, and exam grade 18–30).</p>
+
+        <h3>Step 2 – Insert data</h3>
+        <pre><code>INSERT INTO students_study (student_code, major, study_hours, exam_grade) VALUES
+        ('S01','CS',2,24),
+        ('S02','CS',5,27),
+        ('S03','CS',7,29),
+        ('S04','Math',1,22),
+        ('S05','Math',4,26),
+        ('S06','Math',6,28),
+        ('S07','Other',3,23),
+        ('S08','Other',5,25),
+        ('S09','CS',9,30),
+        ('S10','CS',0,18),
+        ('S11','Math',8,30),
+        ('S12','Other',6,27);</code></pre>
+        <p>We inserted 12 rows to have enough variability for univariate and bivariate summaries.</p>
+
+        <h2>3️⃣ Univariate Distributions</h2>
+        <p>We computed three univariate distributions with SQL.</p>
+        
+        <h3>3A) Distribution of <code>major</code></h3>
+        <pre><code>SELECT
+          major,
+          COUNT(*) AS freq,
+          ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (), 1) AS perc
+        FROM students_study
+        GROUP BY major
+        ORDER BY freq DESC;</code></pre>
+        <figure>
+          <img src="images/hmwk2_major.png" alt="Distribution by major" class="screenshot">
+          <figcaption class="subtle">Result: CS 41.7% · Math 33.3% · Other 25.0%</figcaption>
+        </figure>
+        <p><em>Comment.</em> CS is the most represented major, followed by Math and Other. The sample is reasonably balanced.</p>
+        
+        <h3>3B) Distribution of <code>study_hours</code> (binned)</h3>
+        <pre><code>WITH b AS (
+          SELECT
+            CASE width_bucket(study_hours, 0, 12, 4)
+              WHEN 1 THEN '0–2'
+              WHEN 2 THEN '3–5'
+              WHEN 3 THEN '6–8'
+              WHEN 4 THEN '9–12'
+            END AS study_bin
+          FROM students_study
+        )
+        SELECT
+          study_bin,
+          COUNT(*) AS freq,
+          ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (), 1) AS perc
+        FROM b
+        GROUP BY study_bin
+        ORDER BY study_bin;</code></pre>
+        <figure>
+          <img src="images/hmwk2_study_hours.png" alt="Distribution by study hours (0–2, 3–5, 6–8, 9–12)" class="screenshot">
+          <figcaption class="subtle">Result: 0–2 → 25.0% · 3–5 → 33.3% · 6–8 → 33.3% · 9–12 → 8.3%</figcaption>
+        </figure>
+        <p><em>Comment.</em> Most students study 3–8 hours/week (~66%); very low and very high study time are rarer.</p>
+        
+        <h3>3C) Distribution of <code>exam_grade</code> (binned)</h3>
+        <pre><code>WITH g AS (
+          SELECT
+            CASE
+              WHEN exam_grade BETWEEN 18 AND 22 THEN '18–22'
+              WHEN exam_grade BETWEEN 23 AND 26 THEN '23–26'
+              WHEN exam_grade BETWEEN 27 AND 30 THEN '27–30'
+            END AS grade_bin
+          FROM students_study
+        )
+        SELECT
+          grade_bin,
+          COUNT(*) AS freq,
+          ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (), 1) AS perc
+        FROM g
+        GROUP BY grade_bin
+        ORDER BY grade_bin;</code></pre>
+        <figure>
+          <img src="images/hmwk2_exam_grade.png" alt="Distribution by exam grade (18–22, 23–26, 27–30)" class="screenshot">
+          <figcaption class="subtle">Result: 18–22 → 16.7% · 23–26 → 33.3% · 27–30 → 50.0%</figcaption>
+        </figure>
+        <p><em>Comment.</em> Half of the sample lies in the 27–30 band, showing a skew toward higher grades.</p>        
+
+        <h2>4️⃣ Bivariate Distribution — <code>study_bin × grade_bin</code></h2>
+        <pre><code>WITH s AS (
+          SELECT
+            CASE width_bucket(study_hours, 0, 12, 4)
+              WHEN 1 THEN '0–2'
+              WHEN 2 THEN '3–5'
+              WHEN 3 THEN '6–8'
+              WHEN 4 THEN '9–12'
+            END AS study_bin,
+            CASE
+              WHEN exam_grade BETWEEN 18 AND 22 THEN '18–22'
+              WHEN exam_grade BETWEEN 23 AND 26 THEN '23–26'
+              WHEN exam_grade BETWEEN 27 AND 30 THEN '27–30'
+            END AS grade_bin
+          FROM students_study
+        )
+        SELECT
+          study_bin,
+          SUM(CASE WHEN grade_bin='18–22' THEN 1 ELSE 0 END) AS "18–22",
+          SUM(CASE WHEN grade_bin='23–26' THEN 1 ELSE 0 END) AS "23–26",
+          SUM(CASE WHEN grade_bin='27–30' THEN 1 ELSE 0 END) AS "27–30",
+          COUNT(*) AS total
+        FROM s
+        GROUP BY study_bin
+        ORDER BY study_bin;</code></pre>
+        <figure>
+          <img src="images/hmwk2_bivariate.png" alt="Contingency table study_bin × grade_bin" class="screenshot">
+          <figcaption class="subtle">Rows → 0–2: (2,1,0); 3–5: (0,3,1); 6–8: (0,0,4); 9–12: (0,0,1).</figcaption>
+        </figure>
+        <p><em>Comment.</em> As study time increases, high grades become more frequent. The 6–8h group is entirely 27–30 (4/4), while the 0–2h group shows only low/mid grades. (Small sample caveat.)</p>        
+
+      <h2>5️⃣ Conclusion</h2>
+      <p>
+        From these analyses, we observe how data organization and statistical distributions help uncover patterns in datasets.
+        This basic approach forms the foundation of descriptive statistics — turning data into insight.
+      </p>
+
+      <hr />
+      <p class="back"><a href="index.html">← Back to all homework</a></p>
+    </article>
+  </main>
+
+  <footer class="site-footer container">
+    <p>© <span id="y"></span> Statistics Homework · <strong>Anastasiia Baranovska</strong></p>
+  </footer>
+
+  <script>
+    document.getElementById('y').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>

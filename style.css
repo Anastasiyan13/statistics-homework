@@ -133,3 +133,8 @@
     border-color: rgba(122,162,255,0.6);
   }
   
+  pre { background: rgba(255,255,255,0.06); border:1px solid var(--glass-brd); border-radius:12px; padding:12px; overflow:auto; }
+pre code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size:.95rem; color:#e9eef6; }
+.screenshot{ display:block; max-width:100%; margin:10px auto 6px; border-radius:14px; border:1px solid var(--glass-brd); box-shadow: var(--shadow); }
+figure{ margin: 14px 0; }
+figcaption{ text-align:center; margin-top:6px; }
