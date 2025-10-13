@@ -8,8 +8,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs/themes/prism-okaidia.min.css">
 </head>
+<script src="https://cdn.jsdelivr.net/npm/prismjs/prism.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-sql.min.js"></script>
 <body>
+    
   <div class="bg-gradient"></div>
 
   <header class="site-header container">
@@ -49,7 +53,7 @@
         </p>
 
         <h3>Step 1 – Create the table</h3>
-        <pre><code>DROP TABLE IF EXISTS students_study;
+        <pre><code class="language-sql">DROP TABLE IF EXISTS students_study;
         CREATE TABLE students_study (
         id SERIAL PRIMARY KEY,
         student_code TEXT,
@@ -60,7 +64,7 @@
         <p>This table stores a tiny sample of students (id, code, major, weekly study time, and exam grade 18–30).</p>
 
         <h3>Step 2 – Insert data</h3>
-        <pre><code>INSERT INTO students_study (student_code, major, study_hours, exam_grade) VALUES
+        <pre><code class="language-sql">INSERT INTO students_study (student_code, major, study_hours, exam_grade) VALUES
         ('S01','CS',2,24),
         ('S02','CS',5,27),
         ('S03','CS',7,29),
@@ -79,7 +83,7 @@
         <p>We computed three univariate distributions with SQL.</p>
         
         <h3>3A) Distribution of <code>major</code></h3>
-        <pre><code>SELECT
+        <pre><code class="language-sql">SELECT
           major,
           COUNT(*) AS freq,
           ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (), 1) AS perc
@@ -93,7 +97,7 @@
         <p><em>Comment.</em> CS is the most represented major, followed by Math and Other. The sample is reasonably balanced.</p>
         
         <h3>3B) Distribution of <code>study_hours</code> (binned)</h3>
-        <pre><code>WITH b AS (
+        <pre><code class="language-sql">WITH b AS (
           SELECT
             CASE width_bucket(study_hours, 0, 12, 4)
               WHEN 1 THEN '0–2'
@@ -117,7 +121,7 @@
         <p><em>Comment.</em> Most students study 3–8 hours/week (~66%); very low and very high study time are rarer.</p>
         
         <h3>3C) Distribution of <code>exam_grade</code> (binned)</h3>
-        <pre><code>WITH g AS (
+        <pre><code class="language-sql">WITH g AS (
           SELECT
             CASE
               WHEN exam_grade BETWEEN 18 AND 22 THEN '18–22'
@@ -140,7 +144,7 @@
         <p><em>Comment.</em> Half of the sample lies in the 27–30 band, showing a skew toward higher grades.</p>        
 
         <h2>4️⃣ Bivariate Distribution — <code>study_bin × grade_bin</code></h2>
-        <pre><code>WITH s AS (
+        <pre><code class="language-sql">WITH s AS (
           SELECT
             CASE width_bucket(study_hours, 0, 12, 4)
               WHEN 1 THEN '0–2'
