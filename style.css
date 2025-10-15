@@ -213,3 +213,24 @@ pre[class*="language-"] {
 }
 .code-wrap{ position:relative; }
 
+.btn{
+    padding:8px 12px;
+    border:1px solid var(--glass-brd);
+    border-radius:10px;
+    background:rgba(255,255,255,.08);
+    cursor:pointer;
+  }
+  .table{ width:100%; border-collapse:collapse; }
+  .table th,.table td{
+    border:1px solid var(--glass-brd);
+    padding:6px 8px;
+    text-align:center;
+  }
+  .mutedbox{
+    padding:10px 12px;
+    border-radius:12px;
+    border:1px solid var(--glass-brd);
+    background:rgba(255,255,255,0.06);
+    margin:10px 0;
+  }
+  

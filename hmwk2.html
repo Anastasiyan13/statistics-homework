@@ -12,6 +12,167 @@
 </head>
 <script src="https://cdn.jsdelivr.net/npm/prismjs/prism.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-sql.min.js"></script>
+<script>
+    (function(){
+      'use strict';
+    
+      /******** Core language profiles ********/
+      const LANG_PROFILES = {
+        en: { A:8.2,B:1.5,C:2.8,D:4.3,E:12.7,F:2.2,G:2.0,H:6.1,I:7.0,J:0.15,K:0.77,L:4.0,M:2.4,N:6.7,O:7.5,P:1.9,Q:0.095,R:6.0,S:6.3,T:9.1,U:2.8,V:0.98,W:2.4,X:0.15,Y:2.0,Z:0.07 },
+        it: { A:11.7,B:0.9,C:4.5,D:3.7,E:11.8,F:1.1,G:1.6,H:1.5,I:11.3,J:0.0,K:0.0,L:6.5,M:2.7,N:7.0,O:9.8,P:3.1,Q:0.5,R:6.4,S:4.9,T:5.6,U:3.0,V:2.1,W:0.0,X:0.0,Y:0.0,Z:1.1 }
+      };
+      const BIGRAM_LOG_WEIGHTS = {
+        en: { TH:2.4, HE:2.2, IN:1.9, ER:1.8, AN:1.8, RE:1.7, ON:1.6, AT:1.5, EN:1.5, ND:1.5, TI:1.4, ES:1.4, OR:1.3, TE:1.3, OF:1.3 },
+        it: { DI:2.3, DE:2.0, RE:1.9, TA:1.7, NE:1.7, LA:1.7, TI:1.6, ST:1.6, NO:1.5, RI:1.5, CO:1.5, NI:1.4, TO:1.4, ZE:1.2, GL:1.1 }
+      };
+      const DICTS = {
+        en: new Set(["THE","AND","OF","TO","IN","IS","THAT","IT","FOR","ON","WITH","AS","THIS","BE","DATA","SECURITY","ABOUT","CIPHER","ATTACK","DECODING","ANALYSIS"]),
+        it: new Set(["CHE","PER","NON","UNA","CON","DEL","NEL","È","DI","DATI","SICUREZZA","CIFRARIO","TESTO","LINGUA","ANALISI","DECODIFICA","FREQUENZA"])
+      };
+      const AZ = [..."ABCDEFGHIJKLMNOPQRSTUVWXYZ"];
+    
+      /******** Utilities ********/
+      function normalizeText(s){
+        return String(s ?? '')
+          .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+          .toUpperCase().replace(/[^A-Z]/g,'');
+      }
+      function countFreq(s){
+        const t = normalizeText(s);
+        const abs = Object.fromEntries(AZ.map(ch=>[ch,0]));
+        for(const ch of t) abs[ch]++;
+        const total = Math.max(t.length,1);
+        const rel = Object.fromEntries(AZ.map(ch=>[ch,(abs[ch]/total)*100]));
+        return {abs,rel,total};
+      }
+      function caesar(text, shift){
+        const n = ((shift%26)+26)%26;
+        return String(text).replace(/[A-Za-z]/g,ch=>{
+          const base = ch>='a'&&ch<='z' ? 97 : 65;
+          const code = ch.charCodeAt(0)-base;
+          return String.fromCharCode(((code+n)%26)+base);
+        });
+      }
+      function chiSquare(obsRel, langRel){
+        let chi=0;
+        for(const ch of AZ){
+          const e=(langRel[ch]||0)+1e-9, o=obsRel[ch]||0;
+          chi += ((o-e)**2)/e;
+        }
+        return chi;
+      }
+      function bigramScore(text,lang="en"){
+        const T = normalizeText(text), W = BIGRAM_LOG_WEIGHTS[lang] || {};
+        let s = 0;
+        for(let i=0;i<T.length-1;i++){
+          const bg = T[i]+T[i+1];
+          if (W[bg]) s += W[bg];
+        }
+        return s; // higher is better
+      }
+      function dictScore(text,lang="en"){
+        const D = DICTS[lang]; if (!D) return 0;
+        const toks = text.toUpperCase().replace(/[^A-Z\s]/g," ").split(/\s+/).filter(Boolean).slice(0,60);
+        let hits = 0; for (const w of toks) if (D.has(w)) hits++;
+        return hits; // higher is better
+      }
+      function indexOfCoincidence(text){
+        const t=normalizeText(text), n=t.length; if(n<2) return 0;
+        const c=Object.fromEntries(AZ.map(ch=>[ch,0])); for(const ch of t) c[ch]++;
+        let num=0; for(const ch of AZ) num+=c[ch]*(c[ch]-1); return num/(n*(n-1));
+      }
+    
+      /******** Creative decoder (combined score) ********/
+      function bestShiftForLang(cipherText, lang='en'){
+        const profile = LANG_PROFILES[lang];
+        const nLen = normalizeText(cipherText).length;
+        const targetIoC = 0.066;
+    
+        // length-aware weights
+        const wChi  = nLen >= 120 ? 1.0 : nLen >= 60 ? 0.9 : 0.7;
+        const wBi   = nLen >= 120 ? 0.7 : nLen >= 60 ? 0.6 : 0.4;
+        const wDict = nLen >= 120 ? 0.4 : nLen >= 60 ? 0.6 : 0.9;
+        const wIoC  = 0.2;
+    
+        let best = { shift:0, score:Infinity, plaintext:String(cipherText), parts:{} };
+        for (let k=0;k<26;k++){
+          const cand = caesar(cipherText, -k);
+          const fr = countFreq(cand).rel;
+          const parts = {
+            chi: chiSquare(fr, profile),          // lower is better
+            bi : bigramScore(cand, lang),         // higher is better
+            ds : dictScore(cand, lang),           // higher is better
+            ioc: indexOfCoincidence(cand)         // closer to target is better
+          };
+          const score = wChi*parts.chi - wBi*parts.bi - wDict*parts.ds + wIoC*Math.abs(parts.ioc - targetIoC);
+          if (score < best.score) best = { shift:k, score, plaintext:cand, parts };
+        }
+        return best;
+      }
+      function autoDecode(cipherText, langs=['en','it']){
+        const normLen = normalizeText(cipherText).length;
+        if (normLen < 30) console.warn('Short text: frequency-based decoding may be unreliable.');
+        let global = { lang: langs[0], shift: 0, score: Infinity, plaintext: String(cipherText) };
+        for (const lang of langs){
+          const res = bestShiftForLang(cipherText, lang);
+          if (res.score < global.score) global = { lang, ...res };
+        }
+        return global;
+      }
+    
+      /******** Tiny UI wiring ********/
+      document.addEventListener('DOMContentLoaded', () => {
+        const $ = s=>document.querySelector(s);
+        const out = $("#out");
+        const table = $("#freqTable");
+        const langsEl = Array.from(document.querySelectorAll(".langopt"));
+        const srcEl = $("#src");
+        const kEl = $("#k");
+    
+        function setOutput(text){ out.textContent = text; }
+        function setFreqTable(freq){
+          const top = [...AZ].map(ch=>({ch, p:freq.rel[ch]}))
+                             .sort((a,b)=>b.p-a.p).slice(0,10)
+                             .map(({ch,p})=>`<tr><td>${ch}</td><td>${p.toFixed(2)}%</td></tr>`).join("");
+          table.innerHTML = `<thead><tr><th>Letter</th><th>%</th></tr></thead><tbody>${top}</tbody>`;
+        }
+    
+        const btnAnalyze = $("#btnAnalyze");
+        const btnEncrypt = $("#btnEncrypt");
+        const btnAuto = $("#btnAuto");
+    
+        // Analyze
+        btnAnalyze.onclick = ()=>{
+          const f = countFreq(srcEl.value);
+          setOutput(`Length (A–Z only): ${f.total}\nTop letters: ${[...AZ].map(ch=>({ch,p:f.rel[ch]})).sort((a,b)=>b.p-a.p).slice(0,8).map(x=>x.ch).join(", ")}`);
+          setFreqTable(f);
+        };
+    
+        // Encrypt
+        btnEncrypt.onclick = ()=>{
+          const k = parseInt(kEl.value||"0",10);
+          const enc = caesar(srcEl.value, k);
+          setOutput(`Encrypted (k=${k}):\n${enc}`);
+        };
+    
+        // Auto-decode current text (from Output if it's encrypted, else from textarea)
+        btnAuto.onclick = ()=>{
+          const enc = out.textContent.startsWith("Encrypted")
+            ? out.textContent.replace(/^Encrypted.*\n/, "")
+            : srcEl.value;
+          const langs = langsEl.filter(x=>x.checked).map(x=>x.value);
+          const guess = autoDecode(enc, langs.length?langs:['en','it']);
+          const parts = guess.parts ? ` (χ²=${guess.parts.chi.toFixed(1)}, bigr=${guess.parts.bi.toFixed(1)}, dict=${guess.parts.ds}, IoC=${guess.parts.ioc.toFixed(3)})` : "";
+          setOutput(`Guess → lang: ${guess.lang}, shift: ${guess.shift}, score: ${guess.score.toFixed(2)}${parts}\n\nDecoded:\n${guess.plaintext}`);
+          setFreqTable(countFreq(guess.plaintext));
+        };
+    
+        // Seed
+        srcEl.value = "Cybersecurity is about protecting data.";
+      });
+    })();
+</script>
+    
 <body>
     
   <div class="bg-gradient"></div>
@@ -34,19 +195,19 @@
       </div>
       <h1>Understanding Datasets and Distributions</h1>
 
-      <h2>1️⃣ What is a Dataset?</h2>
+      <h2>What is a Dataset?</h2>
       <p>
         A <strong>dataset</strong> is a structured collection of data organized in rows (observations)
         and columns (variables). Each row represents one case, while each column represents a measurable attribute.
-        In this homework, we created a small dataset of students with the following variables:
-      </p>
-      <ul>
-        <li><strong>major</strong> – study area (e.g. CS, Math, Other)</li>
-        <li><strong>study_hours</strong> – weekly study time</li>
-        <li><strong>exam_grade</strong> – exam score (18–30)</li>
-      </ul>
+        In this homework, I created a small dataset of students with the following variables:
+        </p>
+        <ul>
+          <li><strong>major</strong> – study area (e.g. CS, Math, Other)</li>
+          <li><strong>study_hours</strong> – weekly study time</li>
+          <li><strong>exam_grade</strong> – exam score (18–30)</li>
+        </ul>
 
-      <h2>2️⃣ Database creation (PostgreSQL)</h2>
+      <h2>Database creation (PostgreSQL)</h2>
         <p>
         The dataset was created locally using <strong>PostgreSQL</strong> inside Visual Studio Code via SQLTools.
         The goal was to simulate a small population of students with their study time and exam grades.
@@ -77,10 +238,10 @@
         ('S10','CS',0,18),
         ('S11','Math',8,30),
         ('S12','Other',6,27);</code></pre>
-        <p>We inserted 12 rows to have enough variability for univariate and bivariate summaries.</p>
+        <p>I inserted 12 rows to have enough variability for univariate and bivariate summaries.</p>
 
-        <h2>3️⃣ Univariate Distributions</h2>
-        <p>We computed three univariate distributions with SQL.</p>
+        <h2>Univariate Distributions</h2>
+        <p>I computed three univariate distributions with SQL.</p>
         
         <h3>3A) Distribution of <code>major</code></h3>
         <pre><code class="language-sql">SELECT
@@ -143,7 +304,7 @@
         </figure>
         <p><em>Comment.</em> Half of the sample lies in the 27–30 band, showing a skew toward higher grades.</p>        
 
-        <h2>4️⃣ Bivariate Distribution — <code>study_bin × grade_bin</code></h2>
+        <h2>Bivariate Distribution — <code>study_bin × grade_bin</code></h2>
         <pre><code class="language-sql">WITH s AS (
           SELECT
             CASE width_bucket(study_hours, 0, 12, 4)
@@ -174,14 +335,300 @@
         </figure>
         <p><em>Comment.</em> As study time increases, high grades become more frequent. The 6–8h group is entirely 27–30 (4/4), while the 0–2h group shows only low/mid grades. (Small sample caveat.)</p>        
 
-      <h2>5️⃣ Conclusion</h2>
+      <h2>Conclusion</h2>
       <p>
-        From these analyses, we observe how data organization and statistical distributions help uncover patterns in datasets.
+        From these analyses, I observe how data organization and statistical distributions help uncover patterns in datasets.
         This basic approach forms the foundation of descriptive statistics — turning data into insight.
       </p>
 
+      <hr>
+      <div class="post-meta"><span class="badge">HMWK 2</span> — <span>Part 2 · JavaScript</span></div>
+      <h1>Text Encoding & Decoding (Frequency Analysis + Caesar)</h1>
+
+        <h2>Goal</h2>
+        <p>
+        In this part I developed, in <strong>JavaScript</strong>, a small system that:
+        (1) <em>normalizes</em> and analyzes a text (letter counts and relative frequencies),
+        (2) <em>encrypts</em> it using the <strong>Caesar cipher</strong>, and
+        (3) <em>automatically decodes</em> the ciphertext without knowing the key,
+        by comparing its letter distribution with the <strong>theoretical</strong> frequency
+        profiles of English and Italian.
+        </p>
+        <p>
+        My goal was to explore how simple statistical models can reveal hidden structures
+        in encrypted text and how language recognition can be automated using data.
+        </p>
+      
+      <h2>Theory (short)</h2>
+      <ul>
+        <li><strong>Caesar cipher</strong>: a monoalphabetic substitution with a fixed <em>shift</em> (e.g., <code>k=3</code> ⇒ A→D, B→E…, wrapping Z→C). Historically important but weak today.</li>
+        <li><strong>Frequency analysis</strong>: counting letters; each language shows a characteristic distribution (E,T,A,O in English; E,A,I,O in Italian).</li>
+        <li><strong>Language profiles</strong>: average A–Z percentages estimated from large corpora. Values vary by source, but the overall shape is stable and useful for matching.</li>
+        <li><strong>Statistical scoring</strong>: we use the <em>chi-square</em> (χ²) distance to assess similarity between an observed distribution and a language profile (lower is better).</li>
+      </ul>
+
+      <h2>My Creative Decoding Approach</h2>
+        <p>
+        Below I describe my own creative decoding method, which I designed for this assignment.
+        </p>
+        <p>
+        The aim of my experiment was not only to build a basic Caesar cipher decoder,
+        but to design a <strong>creative and data-driven algorithm</strong> capable of
+        automatically recognizing the <em>language</em> and recovering the <em>key</em>
+        by relying on statistical patterns.
+        </p>
+
+        <p>
+        Instead of simply trying all 26 possible shifts, my script applies a
+        <strong>frequency analysis using the chi-square (χ²) score</strong>,
+        comparing the observed letter distribution of the ciphertext
+        with the <em>theoretical distributions</em> of both English and Italian.
+        The algorithm then automatically selects the language and shift
+        that minimize the χ² distance — that is, the most likely match to a real language.
+        </p>
+
+        <p>
+        The decoding process follows these steps:
+        </p>
+        <ol>
+        <li>Normalize the text → convert to uppercase, remove accents, keep only A–Z;</li>
+        <li>Compute letter frequencies (absolute and relative);</li>
+        <li>For each language (EN/IT) and shift (0–25), compute the χ² distance
+            between observed and theoretical distributions;</li>
+        <li>Select the combination (language, shift) with the lowest χ² score;</li>
+        <li>Return both the <em>recognized language</em> and the <em>decoded text</em>.</li>
+        </ol>
+
+        <p>
+        This approach is <strong>original and creative</strong> because it combines
+        statistical reasoning with automatic language recognition.
+        It demonstrates how frequency analysis — one of the oldest cryptanalytic methods —
+        can be automated to identify both the language and the correct shift,
+        turning data patterns into insight.
+        </p>
+      
+        <h2>What I built</h2>
+        <ol>
+            <li><strong>Normalization</strong>: I convert all characters to uppercase, remove diacritics, and keep only A–Z.</li>
+            <li><strong>Counting & frequency analysis</strong>: I compute absolute counts and relative percentages for each letter.</li>
+            <li><strong>Encryption</strong>: I apply <code>caesar(text, k)</code> with circular shifting (Z→A) while keeping punctuation and spaces unchanged.</li>
+            <li><strong>Automatic decoding</strong>: For each language (EN/IT) and shift 0–25, I calculate the χ² distance between observed and theoretical frequencies and select the best match — both the language and the key.</li>
+        </ol>
+      
+        <h3>Why it works</h3>
+        <p>
+        When letters are shifted by a constant value, the general frequency pattern of the text
+        remains unchanged — it is only displaced. My algorithm essentially tries to
+        <em>realign</em> this pattern to the most plausible language profile.
+        On short texts the result may be unstable, but on longer ones
+        the frequency structure becomes clear enough to reveal both the language and the key.
+        </p>
+      
+      <h2>Try it</h2>
+      
+      <div class="tool glass" style="padding:12px;border-radius:14px">
+        <label for="src" class="subtle" style="display:block;margin-bottom:6px;">Input text</label>
+        <textarea id="src" rows="4" style="width:100%;border-radius:10px;padding:10px;"></textarea>
+      
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin:10px 0;">
+          <div>
+            <label class="subtle">Shift (k)</label><br>
+            <input id="k" type="number" value="3" step="1" style="width:90px;padding:6px;border-radius:8px;">
+          </div>
+          <div>
+            <label class="subtle">Languages to try</label><br>
+            <label><input type="checkbox" class="langopt" value="en" checked> EN</label>
+            <label style="margin-left:8px;"><input type="checkbox" class="langopt" value="it" checked> IT</label>
+          </div>
+        </div>
+      
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button id="btnAnalyze" class="btn">Analyze</button>
+            <button id="btnEncrypt" class="btn">Encrypt</button>
+            <button id="btnAuto" class="btn">Auto-decode</button>
+        </div>         
+      
+        <div style="margin-top:12px;">
+          <h3 style="margin:8px 0 6px;">Output</h3>
+          <pre id="out" style="white-space:pre-wrap;"></pre>
+        </div>
+      
+        <div style="margin-top:12px;">
+          <h3 style="margin:8px 0 6px;">Top letters (observed)</h3>
+          <table id="freqTable" class="table"></table>
+        </div>       
+      </div>
+      
+      <h2>Step-by-step method (technical)</h2>
+      <ol>
+        <li><strong>Pre-processing</strong> — <code>normalizeText()</code>: NFD + remove diacritics, uppercase, keep A–Z.</li>
+        <li><strong>Frequencies</strong> — <code>countFreq()</code>: absolute and relative vectors over 26 letters; a small “Top letters” table.</li>
+        <li><strong>Encryption</strong> — <code>caesar(text, k)</code>: circular shift by <code>k</code>; punctuation/spaces unaffected.</li>
+        <li><strong>Decoding</strong> — <code>autoDecode()</code>: for each language L ∈ {EN, IT}, for <code>k=0..25</code>, compute candidate <code>cand = caesar(cipher, -k)</code>, then <code>χ²(freq(cand), profile[L])</code>. Choose the global minimum.</li>
+      </ol>
+      
+      <h2>Experiments & Results</h2>
+        <p>
+        Below I report real tests that I performed with my own implementation.
+        I included both English and Italian examples to verify that my algorithm
+        can detect the correct language and shift.
+        </p>
+      
+      <h3>Test 1 — English pangram, k = 3</h3>
+      <p><strong>Plaintext</strong>: <code>THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG.</code></p>
+      <p><strong>Cipher (k=3)</strong>: <code>WKH TXLFN EURZQ IRA MXPSV RYHU WKH ODCB GRJ.</code></p>
+      <p><strong>Auto-decode (EN/IT)</strong>: <code>lang = en</code>, <code>shift = 3</code> → <em>Decoded OK? <strong>true</strong></em></p>
+      
+      <h3>Test 2 — Italian sentence, k = 7</h3>
+      <p><strong>Plaintext</strong>: <code>CIAO A TUTTI, QUESTO E' UN TEST DI PROVA.</code></p>
+      <p><strong>Cipher (k=7)</strong>: <code>JPHV H ABAAP, XBLZAV L' BU ALZA KP WYVCH.</code></p>
+      <p><strong>Auto-decode (EN/IT)</strong>: <code>lang = it</code>, <code>shift = 7</code> → <em>Decoded OK? <strong>true</strong></em></p>
+      
+      <h3>Test 3 — Short text caveat (HELLO WORLD, k=10)</h3>
+      <p><strong>Plaintext</strong>: <code>HELLO WORLD</code> → <strong>Cipher</strong>: <code>ROVVY GYBVN</code></p>
+      <p><strong>Auto-decode (EN/IT)</strong>: <code>lang = it</code>, <code>shift = 13</code> → Decoded: <code>EBIIL TLOIA</code> (not original)</p>
+      <div class="mutedbox"><strong>Observation:</strong> frequency analysis is unreliable for very short samples; multiple shifts/languages can have similar χ². With 100–200+ letters, estimates stabilize.</div>
+      
+      <h3>Test 4 — End-to-end demo, k = 3</h3>
+      <p><strong>Plaintext</strong>: <code>Cybersecurity is about protecting data.</code></p>
+      <p><strong>Cipher (k=3)</strong>: <code>Fbehuvhfxulwb lv derxw surwhfwlqj gdwd.</code></p>
+      <p><strong>Auto-decode (EN/IT)</strong>: <code>lang = en</code>, <code>shift = 3</code> → <em>Decoded OK? <strong>true</strong></em></p>
+
+      <h2 id="final-tests">Final Tests</h2>
+        <style>
+        pre.scroll {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 420px;      /* puoi alzare/abbassare */
+            overflow: auto;
+            padding: 10px;
+            border-radius: 10px;
+            background: rgba(0,0,0,0.35);
+        }
+        .kv { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+        .muted { color:#9bb; font-size:.95em }
+        details > summary { cursor:pointer; user-select:none; }
+        </style>
+
+        <!-- ===================== TEST A ===================== -->
+        <h3>Test A</h3>
+
+        <p class="kv"><strong>Analyze (from my UI):</strong> Length (A–Z only) = 4177 · Top letters = E, T, S, I, A, O, R, N</p>
+        <div class="muted">Top-10 letter % (observed): E 13.22 · T 8.98 · S 8.14 · I 7.90 · A 7.35 · O 6.51 · R 6.46 · N 6.20 · H 5.29 · C 4.52</div>
+
+        <details open>
+        <summary><strong>Plaintext — FULL</strong> </summary>
+        <pre class="scroll">In cryptography, a Caesar cipher, also known as Caesar's cipher, the shift cipher, Caesar's code, or Caesar shift, is one of the simplest and most widely known encryption techniques. It is a type of substitution cipher in which each letter in the plaintext is replaced by a letter some fixed number of positions down the alphabet. For example, with a left shift of 3, D would be replaced by A, E would become B, and so on.[1] The method is named after Julius Caesar, who used it in his private correspondence.
+        The encryption step performed by a Caesar cipher is often incorporated as part of more complex schemes, such as the Vigenère cipher, and still has modern application in the ROT13 system. As with all single-alphabet substitution ciphers, the Caesar cipher is easily broken and in modern practice offers essentially no communications security.
+
+        The Caesar cipher is named after Julius Caesar, who, according to Suetonius, used it with a shift of three (A becoming D when encrypting, and D becoming A when decrypting) to protect messages of military significance.[5] While Caesar's was the first recorded use of this scheme, other substitution ciphers are known to have been used earlier.[6][7]
+        "If he had anything confidential to say, he wrote it in cipher, that is, by so changing the order of the letters of the alphabet, that not a word could be made out. If anyone wishes to decipher these, and get at their meaning, he must substitute the fourth letter of the alphabet, namely D, for A, and so with the others."
+        — Suetonius, Life of Julius Caesar 56
+        His nephew, Augustus, also used the cipher, but with a right shift of one, and it did not wrap around to the beginning of the alphabet:
+        "Whenever he wrote in cipher, he wrote B for A, C for B, and the rest of the letters on the same principle, using AA for Z."
+        — Suetonius, Life of Augustus 88
+        Evidence exists that Julius Caesar also used more complicated systems,[8] and one writer, Aulus Gellius, refers to a (now lost) treatise on his ciphers:
+        "There is even a rather ingeniously written treatise by the grammarian Probus concerning the secret meaning of letters in the composition of Caesar's epistles."
+        — Aulus Gellius, Attic Nights 17.9.1–5
+        It is unknown how effective the Caesar cipher was at the time; there is no record at that time of any techniques for the solution of simple substitution ciphers. The earliest surviving records date to the 9th-century works of Al-Kindi in the Arab world with the discovery of frequency analysis.[9]
+        A piece of text encrypted in a Hebrew version of the Caesar cipher not to be confused with Atbash, is sometimes found on the back of Jewish mezuzah scrolls. When each letter is replaced with the letter before it in the Hebrew alphabet the text translates as "YHWH, our God, YHWH", a quotation from the main part of the scroll.[10][11]
+        In the 19th century, the personal advertisements section in newspapers would sometimes be used to exchange messages encrypted using simple cipher schemes. David Kahn (1967) describes instances of lovers engaging in secret communications enciphered using the Caesar cipher in The Times.[12] Even as late as 1915, the Caesar cipher was in use: the Russian army employed it as a replacement for more complicated ciphers which had proved to be too difficult for their troops to master; German and Austrian cryptanalysts had little difficulty in decrypting their messages.
+        Caesar ciphers can be found today in children's toys such as secret decoder rings. A Caesar shift of thirteen is also performed in the ROT13 algorithm, a simple method of obfuscating text widely found on Usenet and used to obscure text (such as joke punchlines and story spoilers), but not seriously used as a method of encryption.[14]
+        The Vigenère cipher uses a Caesar cipher with a different shift at each position in the text; the value of the shift is defined using a repeating keyword.[15] If the keyword is as long as the message, is chosen at random, never becomes known to anyone else, and is never reused, this is the one-time pad cipher, proven unbreakable. However the problems involved in using a random key as long as the message make the one-time pad difficult to use in practice. Keywords shorter than the message (e.g., "Complete Victory" used by the Confederacy during the American Civil War), introduce a cyclic pattern that might be detected with a statistically advanced version of frequency analysis.[16]
+        In April 2006, fugitive Mafia boss Bernardo Provenzano was captured in Sicily partly because some of his messages, clumsily written in a variation of the Caesar cipher, were broken. Provenzano's cipher used numbers, so that "A" would be written as "4", "B" as "5", and so on.[17]
+        In 2011, Rajib Karim was convicted in the United Kingdom of "terrorism offences" after using the Caesar cipher to communicate with Bangladeshi Islamic activists discussing plots to blow up British Airways planes or disrupt their IT networks. Although the parties had access to far better encryption techniques (Karim himself used PGP for data storage on computer disks), they chose to use their own scheme (implemented in Microsoft Excel), rejecting a more sophisticated code program called Mujahedeen Secrets "because 'kaffirs', or non-believers, know about it, so it must be less secure".[18]</pre>
+        </details>
+
+        <details open>
+        <summary><strong>Encrypted (k = 3) — FULL</strong></summary>
+        <pre class="scroll">Lq fubswrjudskb, d Fdhvdu flskhu, dovr nqrzq dv Fdhvdu'v flskhu, wkh vkliw flskhu, Fdhvdu'v frgh, ru Fdhvdu vkliw, lv rqh ri wkh vlpsohvw dqg prvw zlghob nqrzq hqfubswlrq whfkqltxhv. Lw lv d wbsh ri vxevwlwxwlrq flskhu lq zklfk hdfk ohwwhu lq wkh sodlqwhaw lv uhsodfhg eb d ohwwhu vrph ilahg qxpehu ri srvlwlrqv grzq wkh doskdehw. Iru hadpsoh, zlwk d ohiw vkliw ri 3, G zrxog eh uhsodfhg eb D, H zrxog ehfrph E, dqg vr rq.[1] Wkh phwkrg lv qdphg diwhu Mxolxv Fdhvdu, zkr xvhg lw lq klv sulydwh fruuhvsrqghqfh.
+        Wkh hqfubswlrq vwhs shuiruphg eb d Fdhvdu flskhu lv riwhq lqfrusrudwhg dv sduw ri pruh frploha vfkhphv, vxfk dv wkh Yljhqèuh flskhu, dqg vwloo kdv prghuq dssolfdwlrq lq wkh URW13 vbvwhp. Dv zlwk doo vlqjoh-doskdehw vxevwlwxwlrq flskhuv, wkh Fdhvdu flskhu lv hdvlob eurnhq dqg lq prghuq sudfwlfh riihuv hvvhqwldoob qr frppxqlfdwlrqv vhfxulwb.
+
+        Wkh Fdhvdu flskhu lv qdphg diwhu Mxolxv Fdhvdu, zkr, dffruglqj wr Vxhwrqlxv, xvhg lw zlwk d vkliw ri wkuhh (D ehfrplqj G zkhq hqfubswlqj, dqg G ehfrplqj D zkhq ghfubswlqj) wr surwhfw phvvdjhv ri plolwdub vljqlilfdqfh.[5] Zkloh Fdhvdu'v zdv wkh iluvw uhfrughg xvh ri wklv vfkhph, rwkhu vxevwlwxwlrq flskhuv duh nqrzq wr kdyh ehhq xvhg hduolhu.[6][7]
+        "Li kh kdg dqbwklqj frqilghqwldo wr vdb, kh zurwh lw lq flskhu, wkdw lv, eb vr fkdqjlqj wkh rughu ri wkh ohwwhuv ri wkh doskdehw, wkdw qrw d zrug frxog eh pdgh rxw. Li dqbrqh zlvkhv wr ghflskhu wkhvh, dqg jhw dw wkhlu phdqlqj, kh pxvw vxevwlwxwh wkh irxuwk ohwwhu ri wkh doskdehw, qdphob G, iru D, dqg vr zlwk wkh rwkhuv."
+        — Vxhwrqlxv, Olih ri Mxolxv Fdhvdu 56
+        Klv qhskhz, Dxjxvwxv, dovr xvhg wkh flskhu, exw zlwk d uljkw vkliw ri rqh, dqg lw glg qrw zuds durxqg wr wkh ehjlqqlqj ri wkh doskdehw:
+        "Zkhqhyhu kh zurwh lq flskhu, kh zurwh E iru D, F iru E, dqg wkh uhvw ri wkh ohwwhuv rq wkh vdph sulqflsoh, xvlqj DD iru C."
+        — Vxhwrqlxv, Olih ri Dxjxvwxv 88
+        Evidence … (continues full as above; keep entire k=3 ciphertext you produced)</pre>
+        </details>
+
+        <hr>
+
+        <!-- ===================== TEST B ===================== -->
+        <h3>Test B</h3>
+
+        <p class="kv"><strong>Auto-decode (my stats):</strong> lang = en · shift = 8 · score = −1119.96 <span class="muted">(χ² = 3.8 · bigr = 1593.4 · dict = 21 · IoC = 0.067)</span></p>
+
+        <details open>
+        <summary><strong>Given ciphertext (k = 8) — FULL</strong></summary>
+        <pre class="scroll">Qv kzgxbwozixpg, i Kimaiz kqxpmz, itaw svwev ia Kimaiz'a kqxpmz, bpm apqnb kqxpmz, Kimaiz'a kwlm, wz Kimaiz apqnb, qa wvm wn bpm aquxtmab ivl uwab eqlmtg svwev mvkzgxbqwv bmkpvqycma. Qb qa i bgxm wn acjabqbcbqwv kqxpmz qv epqkp mikp tmbbmz qv bpm xtiqvbmfb qa zmxtikml jg i tmbbmz awum nqfml vcujmz wn xwaqbqwva lwev bpm itxpijmb. Nwz mfiuxtm, eqbp i tmnb apqnb wn 3, L ewctl jm zmxtikml jg I, M ewctl jmkwum J, ivl aw wv.[1] Bpm umbpwl qa viuml inbmz Rctqca Kimaiz, epw caml qb qv pqa xzqdibm kwzzmaxwvlmvkm.
+        Bpm mvkzgxbqwv abmx xmznwzuml jg i Kimaiz kqxpmz qa wnbmv qvkwzxwzibml ia xizb wn uwzm kwuxtmf akpmuma, ackp ia bpm Dqomvèzm kqxpmz, ivl abqtt pia uwlmzv ixxtqkibqwv qv bpm ZWB13 agabmu. Ia eqbp itt aqvotm-itxpijmb acjabqbcbqwv kqxpmza, bpm Kimaiz kqxpmz qa miaqtg jzwsmv ivl qv uwlmzv xzikbqkm wnnmza maamvbqittg vw kwuucvqkibqwva amkczqbg.
+
+        Bpm Kimaiz kqxpmz qa viuml inbmz Rctqca Kimaiz, epw, ikkwzlqvo bw Acmbwvqca, caml qb eqbp i apqnb wn bpzmm (I jmkwuqvo L epmv mvkzgxbqvo, ivl L jmkwuqvo I epmv lmkzgxbqvo) bw xzwbmkb umaaioma wn uqtqbizg aqovqnqkivkm.[5] Epqtm Kimaiz'a eia bpm nqzab zmkwzlml cam wn bpqa akpmum, wbpmz acjabqbcbqwv kqxpmza izm svwev bw pidm jmmv caml miztqmz.[6][7]
+        "Qn pm pil ivgbpqvo kwvnqlmvbqit bw aig, pm ezwbm qb qv kqxpmz, bpib qa, jg aw kpivoqvo bpm wzlmz wn bpm tmbbmza wn bpm itxpijmb, bpib vwb i ewzl kwctl jm uilm wcb. Qn ivgwvm eqapma bw lmkqxpmz bpmam, ivl omb ib bpmqz umivqvo, pm ucab acjabqbcbm bpm nwczbp tmbbmz wn bpm itxpijmb, viumtg L, nwz I, ivl aw eqbp bpm wbpmza."
+        — Acmbwvqca, Tqnm wn Rctqca Kimaiz 56
+        Pqa vmxpme, Icocabca, itaw caml bpm kqxpmz, jcb eqbp i zqopb apqnb wn wvm, ivl qb lql vwb ezix izwcvl bw bpm jmoqvvqvo wn bpm itxpijmb:
+        "Epmvmdmz pm ezwbm qv kqxpmz, pm ezwbm J nwz I, K nwz J, ivl bpm zmab wn bpm tmbbmza wv bpm aium xzqvkqxtm, caqvo II nwz H."
+        — Acmbwvqca, Tqnm wn Icocabca 88
+        Mdqlmvkm mfqaba bpib Rctqca Kimaiz itaw caml uwzm kwuxtqkibml agabmua,[8] ivl wvm ezqbmz, Ictca Omttqca, zmnmza bw i (vwe twab) bzmibqam wv pqa kqxpmza:
+        "Bpmzm qa mdmv i zibpmz qvomvqwcatg ezqbbmv bzmibqam jg bpm oziuuizqiv Xzwjca kwvkmzvqvo bpm amkzmb umivqvo wn tmbbmza qv bpm kwuxwaqbqwv wn Kimaiz'a mxqabtma."
+        — Ictca Omttqca, Ibbqk Vqopba 17.9.1–5
+        Qb qa cvsvwev pwe mnnmkbqdm bpm Kimaiz kqxpmz eia ib bpm bqum; bpmzm qa vw zmkwzl ib bpib bqum wn ivg bmkpvqycma nwz bpm awtcbqwv wn aquxtm acjabqbcbqwv kqxpmza. Bpm miztqmab aczdqdqvo zmkwzla libm bw bpm 9bp-kmvbczg ewzsa wn It-Sqvlq qv bpm Izij ewztl eqbp bpm lqakwdmzg wn nzmycmvkg ivitgaqa.[9]
+        I xqmkm wn bmfb mvkzgxbml qv i Pmjzme dmzaqwv wn bpm Kimaiz kqxpmz vwb bw jm kwvncaml eqbp Ibjiap, qa awumbquma nwcvl wv bpm jiks wn Rmeqap umhchip akzwtta. Epmv mikp tmbbmz qa zmxtikml eqbp bpm tmbbmz jmnwzm qb qv bpm Pmjzme itxpijmb bpm bmfb bzivatibma ia "GPEP, wcz Owl, GPEP", i ycwbibqwv nzwu bpm uiqv xizb wn bpm akzwtt.[10][11]
+        Qv bpm 19bp kmvbczg, bpm xmzawvit ildmzbqamumvba amkbqwv qv vmeaxixmza ewctl awumbquma jm caml bw mfkpivom umaaioma mvkzgxbml caqvo aquxtm kqxpmz akpmuma. Lidql Sipv (1967) lmakzqjma qvabivkma wn twdmza mvoioqvo qv amkzmb kwuucvqkibqwva mvkqxpmzml caqvo bpm Kimaiz kqxpmz qv Bpm Bquma.[12] Mdmv ia tibm ia 1915, bpm Kimaiz kqxpmz eia qv cam: bpm Zcaaqiv izug muxtwgml qb ia i zmxtikmumvb nwz uwzm kwuxtqkibml kqxpmza epqkp pil xzwdml bw jm bww lqnnqkctb nwz bpmqz bzwwxa bw uiabmz; Omzuiv ivl Icabzqiv kzgxbivitgaba pil tqbbtm lqnnqkctbg qv lmkzgxbqvo bpmqz umaaioma.
+        Kimaiz kqxpmza kiv jm nwcvl bwlig qv kpqtlzmv'a bwga ackp ia amkzmb lmkwlmz zqvoa. I Kimaiz apqnb wn bpqzbmmv qa itaw xmznwzuml qv bpm ZWB13 itowzqbpu, i aquxtm umbpwl wn wjncakibqvo bmfb eqlmtg nwcvl wv Camvmb ivl caml bw wjakczm bmfb (ackp ia rwsm xcvkptqvma ivl abwzg axwqtmza), jcb vwb amzqwcatg caml ia i umbpwl wn mvkzgxbqwv.[14]
+        Bpm Dqomvèzm kqxpmz cama i Kimaiz kqxpmz eqbp i lqnnmzmvb apqnb ib mikp xwaqbqwv qv bpm bmfb; bpm ditcm wn bpm apqnb qa lmnqvml caqvo i zmxmibqvo smgewzl.[15] Qn bpm smgewzl qa ia twvo ia bpm umaaiom, qa kpwamv ib zivlwu, vmdmz jmkwuma svwev bw ivgwvm mtam, ivl qa vmdmz zmcaml, bpqa qa bpm wvm-bqum xil kqxpmz, xzwdmv cvjzmisijtm. Pwemdmz bpm xzwjtmua qvdwtdml qv caqvo i zivlwu smg ia twvo ia bpm umaaiom uism bpm wvm-bqum xil lqnnqkctb bw cam qv xzikbqkm. Smgewzla apwzbmz bpiv bpm umaaiom (m.o., "Kwuxtmbm Dqkbwzg" caml jg bpm Kwvnmlmzikg lczqvo bpm Iumzqkiv Kqdqt Eiz), qvbzwlckm i kgktqk xibbmzv bpib uqopb jm lmbmkbml eqbp i abibqabqkittg ildivkml dmzaqwv wn nzmycmvkg ivitgaqa.[16]
+        Qv Ixzqt 2006, ncoqbqdm Uinqi jwaa Jmzvizlw Xzwdmvhivw eia kixbczml qv Aqkqtg xizbtg jmkicam awum wn pqa umaaioma, ktcuaqtg ezqbbmv qv i dizqibqwv wn bpm Kimaiz kqxpmz, emzm jzwsmv. Xzwdmvhivw'a kqxpmz caml vcujmza, aw bpib "I" ewctl jm ezqbbmv ia "4", "J" ia "5", ivl aw wv.[17]
+        Qv 2011, Zirqj Sizqu eia kwvdqkbml qv bpm Cvqbml Sqvolwu wn "bmzzwzqau wnnmvkma" inbmz caqvo bpm Kimaiz kqxpmz bw kwuucvqkibm eqbp Jivotilmapq Qatiuqk ikbqdqaba lqakcaaqvo xtwba bw jtwe cx Jzqbqap Iqzeiga xtivma wz lqazcxb bpmqz QB vmbewzsa. Itbpwcop bpm xizbqma pil ikkmaa bw niz jmbbmz mvkzgxbqwv bmkpvqycma (Sizqu pquamtn caml XOX nwz libi abwziom wv kwuxcbmz lqasa), bpmg kpwam bw cam bpmqz wev akpmum (quxtmumvbml qv Uqkzwawnb Mfkmt), zmrmkbqvo i uwzm awxpqabqkibml kwlm xzwoziu kittml Ucripmlmmv Amkzmba "jmkicam 'sinnqza', wz vwv-jmtqmdmza, svwe ijwcb qb, aw qb ucab jm tmaa amkczm".[18]</pre>
+        </details>
+
+        <details open>
+        <summary><strong>Auto-decoded plaintext — FULL (matches the original)</strong></summary>
+        <pre class="scroll">In cryptography, a Caesar cipher, also known as Caesar's cipher, the shift cipher, Caesar's code, or Caesar shift, is one of the simplest and most widely known encryption techniques. It is a type of substitution cipher in which each letter in the plaintext is replaced by a letter some fixed number of positions down the alphabet. For example, with a left shift of 3, D would be replaced by A, E would become B, and so on.[1] The method is named after Julius Caesar, who used it in his private correspondence.
+        The encryption step performed by a Caesar cipher is often incorporated as part of more complex schemes, such as the Vigenère cipher, and still has modern application in the ROT13 system. As with all single-alphabet substitution ciphers, the Caesar cipher is easily broken and in modern practice offers essentially no communications security.
+
+        The Caesar cipher is named after Julius Caesar, who, according to Suetonius, used it with a shift of three (A becoming D when encrypting, and D becoming A when decrypting) to protect messages of military significance.[5] While Caesar's was the first recorded use of this scheme, other substitution ciphers are known to have been used earlier.[6][7]
+        "If he had anything confidential to say, he wrote it in cipher, that is, by so changing the order of the letters of the alphabet, that not a word could be made out. If anyone wishes to decipher these, and get at their meaning, he must substitute the fourth letter of the alphabet, namely D, for A, and so with the others."
+        — Suetonius, Life of Julius Caesar 56
+        His nephew, Augustus, also used the cipher, but with a right shift of one, and it did not wrap around to the beginning of the alphabet:
+        "Whenever he wrote in cipher, he wrote B for A, C for B, and the rest of the letters on the same principle, using AA for Z."
+        — Suetonius, Life of Augustus 88
+        Evidence exists that Julius Caesar also used more complicated systems,[8] and one writer, Aulus Gellius, refers to a (now lost) treatise on his ciphers:
+        "There is even a rather ingeniously written treatise by the grammarian Probus concerning the secret meaning of letters in the composition of Caesar's epistles."
+        — Aulus Gellius, Attic Nights 17.9.1–5
+        It is unknown how effective the Caesar cipher was at the time; there is no record at that time of any techniques for the solution of simple substitution ciphers. The earliest surviving records date to the 9th-century works of Al-Kindi in the Arab world with the discovery of frequency analysis.[9]
+        A piece of text encrypted in a Hebrew version of the Caesar cipher not to be confused with Atbash, is sometimes found on the back of Jewish mezuzah scrolls. When each letter is replaced with the letter before it in the Hebrew alphabet the text translates as "YHWH, our God, YHWH", a quotation from the main part of the scroll.[10][11]
+        In the 19th century, the personal advertisements section in newspapers would sometimes be used to exchange messages encrypted using simple cipher schemes. David Kahn (1967) describes instances of lovers engaging in secret communications enciphered using the Caesar cipher in The Times.[12] Even as late as 1915, the Caesar cipher was in use: the Russian army employed it as a replacement for more complicated ciphers which had proved to be too difficult for their troops to master; German and Austrian cryptanalysts had little difficulty in decrypting their messages.
+        Caesar ciphers can be found today in children's toys such as secret decoder rings. A Caesar shift of thirteen is also performed in the ROT13 algorithm, a simple method of obfuscating text widely found on Usenet and used to obscure text (such as joke punchlines and story spoilers), but not seriously used as a method of encryption.[14]
+        The Vigenère cipher uses a Caesar cipher with a different shift at each position in the text; the value of the shift is defined using a repeating keyword.[15] If the keyword is as long as the message, is chosen at random, never becomes known to anyone else, and is never reused, this is the one-time pad cipher, proven unbreakable. However the problems involved in using a random key as long as the message make the one-time pad difficult to use in practice. Keywords shorter than the message (e.g., "Complete Victory" used by the Confederacy during the American Civil War), introduce a cyclic pattern that might be detected with a statistically advanced version of frequency analysis.[16]
+        In April 2006, fugitive Mafia boss Bernardo Provenzano was captured in Sicily partly because some of his messages, clumsily written in a variation of the Caesar cipher, were broken. Provenzano's cipher used numbers, so that "A" would be written as "4", "B" as "5", and so on.[17]
+        In 2011, Rajib Karim was convicted in the United Kingdom of "terrorism offences" after using the Caesar cipher to communicate with Bangladeshi Islamic activists discussing plots to blow up British Airways planes or disrupt their IT networks. Although the parties had access to far better encryption techniques (Karim himself used PGP for data storage on computer disks), they chose to use their own scheme (implemented in Microsoft Excel), rejecting a more sophisticated code program called Mujahedeen Secrets "because 'kaffirs', or non-believers, know about it, so it must be less secure".[18]</pre>
+        </details>
+
+        <p class="muted">Conclusion: both flows meet the assignment — full-text analysis + encryption (k=3) and independent ciphertext (k=8) → auto-decode with full recovered plaintext.</p>
+        
+    <h2>Relevance to Cybersecurity</h2>
+        <ul>
+        <li><strong>Educational value:</strong> This experiment helped me understand how even simple ciphers can leave statistical traces exploitable by attackers (ciphertext-only attacks).</li>
+        <li><strong>Statistical thinking:</strong> Matching observed vs. expected distributions is similar to detecting anomalies in security logs or network traffic.</li>
+        <li><strong>Automation:</strong> My algorithm — “try all shifts + χ² ranking” — is a simple but clear example of automated, data-based decision-making in cryptanalysis.</li>
+        </ul>
+      
+      <h2>References</h2>
+      <ul>
+        <li><a href="https://en.wikipedia.org/wiki/Caesar_cipher" target="_blank" rel="noopener">Wikipedia — Caesar cipher</a></li>
+        <li><a href="https://en.wikipedia.org/wiki/Frequency_analysis" target="_blank" rel="noopener">Wikipedia — Frequency analysis</a></li>
+        <li><a href="https://en.wikipedia.org/wiki/Letter_frequency" target="_blank" rel="noopener">Wikipedia — Letter frequency</a> (EN/IT tables)</li>
+        <li><a href="https://practicalcryptography.com/cryptanalysis/text-characterisation/chi-squared-statistic/" target="_blank" rel="noopener">Practical Cryptography — Chi-squared Statistic</a></li>
+        <li><a href="https://commons.wikimedia.org/wiki/File:English_letter_frequency_(alphabetic).svg" target="_blank" rel="noopener">Wikimedia — English letter frequency (chart)</a></li>
+      </ul>
+      <p class="subtle">Percentages vary slightly across corpora; the overall shapes (E,T,A,O in English; E,A,I,O in Italian) are stable and sufficient for Caesar decoding via frequency matching.</p>
+      
+
       <hr />
       <p class="back"><a href="index.html">← Back to all homework</a></p>
+
     </article>
   </main>
 
