@@ -233,4 +233,12 @@ pre[class*="language-"] {
     background:rgba(255,255,255,0.06);
     margin:10px 0;
   }
+
   
+/* FIX: nessun overlay deve catturare i click */
+.bg-gradient { pointer-events: none; z-index: -1; position: fixed; inset: 0; }
+.glass::before, .post::before, .tool::before { pointer-events: none !important; }
+
+/* (facoltativo) metti i contenuti sopra in z-index */
+.post, .tool, .container, .site-header, .site-footer { position: relative; z-index: 1; }
+
