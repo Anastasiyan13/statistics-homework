@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HMWK 4 · Law of Large Numbers (LLN)</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div class="bg-gradient" style="pointer-events:none; z-index:-1;"></div>
+  
+    <header class="site-header container">
+      <a class="brand" href="index.html">📊 Statistics</a>
+      <nav class="nav">
+        <a href="index.html" class="nav-link">Home</a>
+        <a href="hmwk1.html" class="nav-link">HMWK 1</a>
+        <a href="hmwk2.html" class="nav-link">HMWK 2</a>
+        <a href="hmwk3.html" class="nav-link">HMWK 3</a>
+        <a href="hmwk4.html" class="nav-link active">HMWK 4</a>
+      </nav>
+    </header>
+    <main class="container">
+        <article class="post glass">
+          <div class="post-meta">
+            <span class="badge">HMWK 4</span>
+            <span>—</span>
+            <span>Law of Large Numbers (LLN)</span>
+          </div>
+        <h1>Law of Large Numbers & Empirical Convergence</h1>
+        <h2>Theory</h2>
+        <p>
+            The <strong>Law of Large Numbers</strong> (LLN) states that the <em>relative frequency</em> of a success
+            in repeated independent trials converges to the true probability <code>p</code> as the number of trials increases.
+            If each trial is Bernoulli(<code>p</code>), the running frequency <code>f(n) = successes / n</code> tends to <code>p</code> as <code>n → ∞</code>.
+        </p>
+        <p>
+            In this homework I simulate <code>m</code> independent trajectories of <code>N</code> Bernoulli trials.
+            On the left I plot each trajectory’s <code>f(n)</code> over time; on the right I show, at the current step,
+            the empirical distribution of <code>f(n)</code> across all trajectories (histogram).
+            As <code>n</code> becomes large, the histogram concentrates around <code>p</code>.
+        </p>
+
+        <hr>
+        <h2>Interactive Experiment (JS)</h2>
+  
+        <section class="tool glass" style="padding:12px;border-radius:14px">
+          <h3>1) Parameters</h3>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <div>
+              <label>p (success probability)</label><br>
+              <input id="p" type="number" value="0.6" step="0.01" min="0" max="1" style="width:110px;padding:6px;border-radius:8px;">
+            </div>
+            <div>
+              <label>m (trajectories)</label><br>
+              <input id="m" type="number" value="200" step="1" min="1" max="1000" style="width:110px;padding:6px;border-radius:8px;">
+            </div>
+            <div>
+              <label>N (trials per trajectory)</label><br>
+              <input id="N" type="number" value="1000" step="10" min="10" max="5000" style="width:150px;padding:6px;border-radius:8px;">
+            </div>
+            <div style="min-width:220px;">
+              <label>Animation speed (steps/sec)</label><br>
+              <input id="speed" type="range" min="1" max="60" value="30" style="width:220px;">
+            </div>
+            <div>
+              <label>Seed (optional)</label><br>
+              <input id="seed" type="text" placeholder="random if empty" style="width:180px;padding:6px;border-radius:8px;">
+            </div>
+          </div>
+  
+          <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;">
+            <button id="btn-generate" class="btn primary">Generate</button>
+            <button id="btn-start" class="btn">Start</button>
+            <button id="btn-pause" class="btn">Pause</button>
+            <button id="btn-step" class="btn">Step</button>
+            <button id="btn-reset" class="btn">Reset</button>
+            <span class="pill mono" id="run-summary" style="margin-left:8px;">n=0 / 1000 · m=200 · p=0.6</span>
+          </div>
+  
+          <hr>
+  
+          <h3>2) Visualization</h3>
+          <div style="display:grid;grid-template-columns:1.2fr .55fr;gap:16px;">
+            <div style="border:1px solid var(--border,#e5e7eb);border-radius:12px;padding:8px;">
+              <canvas id="traj" style="width:100%; height:300px; display:block;"></canvas>
+              <div class="muted small" style="margin-top:6px;">
+                <span class="pill" style="background:#e9f5ff;color:#0b5fcc">Trajectories f(n)</span>
+                <span class="pill" style="background:#e8fff6;color:#0b7c5f">Mean f(n) across m</span>
+                <span class="pill" style="background:#fff7e6;color:#9a6700">True p</span>
+              </div>
+            </div>
+            <div style="border:1px solid var(--border,#e5e7eb);border-radius:12px;padding:8px;">
+                <canvas id="hist" style="width:100%; height:300px; display:block;"></canvas>
+            </div>
+          </div>
+  
+          <div id="stats" class="muted small" style="margin-top:10px;"></div>
+        </section>
+
+        <h2>Method (summary)</h2>
+        <ol>
+          <li>I simulate <code>m</code> independent Bernoulli(<code>p</code>) trajectories of length <code>N</code>.</li>
+          <li>For each trajectory I compute the running relative frequency <code>f(n)=successes/n</code>.</li>
+          <li>I plot all <code>f(n)</code> curves; I overlay the true <code>p</code> and the cross-trajectory mean of <code>f(n)</code>.</li>
+          <li>At the current step <code>n</code>, I build a histogram of all <code>f_i(n)</code> (i=1..m).</li>
+          <li>I observe how the empirical distribution becomes concentrated around <code>p</code> as <code>n</code> increases.</li>
+        </ol>
+  
+        <h2>Observation</h2>
+        <p>
+          For small <code>n</code> trajectories fluctuate widely and the histogram is spread out.
+          As <code>n</code> grows, the histogram tightens around <code>p</code>, and the mean curve approaches the horizontal line at <code>p</code>.
+          This visually confirms the convergence predicted by the LLN.
+        </p>
+
+        <h2>Experimental Tests</h2>
+        <p>
+        Using the interactive simulator, I performed four empirical tests to verify the behavior predicted by the Law of Large Numbers.
+        Each experiment explores how the empirical frequency <code>f(n)</code> converges to the true probability <code>p</code>
+        under different parameter settings.
+        </p>
+
+        <h3>Test A — Baseline (p = 0.6, m = 200, N = 1000)</h3>
+        <p>
+        I generated 200 trajectories with <code>p = 0.6</code> and <code>N = 1000</code>.  
+        At the final step, the results were <strong>mean f(n) = 0.6022</strong> and <strong>std ≈ 0.0167</strong>.
+        The theoretical value of the standard deviation is √(p·(1−p)/n) = 0.0155, which matches almost perfectly.
+        The histogram becomes sharply concentrated around 0.6, and all trajectories stabilize after roughly 300–400 trials.
+        </p>
+        <figure>
+        <img src="images/hmwk4_testA.png" alt="Test A — Baseline convergence" class="screenshot">
+        <figcaption>Figure A — Trajectories converging to p = 0.6 (baseline).</figcaption>
+        </figure>
+
+        <h3>Test B — Convergence over time (n = 10, 100, 1000)</h3>
+        <p>
+        Using the same parameters as in Test A, I paused the simulation at three different points
+        (<code>n = 10</code>, <code>n = 100</code>, and <code>n = 1000</code>)
+        to observe how the distribution of <code>f(n)</code> changes as the number of trials increases.
+        The measured standard deviations were:
+        </p>
+        <ul>
+        <li>n = 10 → std ≈ 0.1606</li>
+        <li>n = 100 → std ≈ 0.0468</li>
+        <li>n = 1000 → std ≈ 0.0143</li>
+        </ul>
+        <p>
+        The results show a clear √(1/n) trend: when n grows from 10 to 100, the dispersion decreases by a factor of about 3,
+        and when n increases from 100 to 1000, the spread becomes about 3× smaller again.
+        In all cases, the mean remains close to 0.6, while the histogram gradually tightens and becomes almost symmetric
+        around the true probability at large n.
+        </p>
+        <figure>
+        <img src="images/hmwk4_testB_10.png" alt="Test B — n=10" class="screenshot">
+        <figcaption>Figure B1 — Histogram at n = 10 showing wide dispersion.</figcaption>
+        </figure>
+        <figure>
+        <img src="images/hmwk4_testB_100.png" alt="Test B — n=100" class="screenshot">
+        <figcaption>Figure B2 — Histogram at n = 100 showing intermediate dispersion.</figcaption>
+        </figure>
+        <figure>
+        <img src="images/hmwk4_testB_1000.png" alt="Test B — n=1000" class="screenshot">
+        <figcaption>Figure B3 — Histogram at n = 1000 showing strong concentration around p = 0.6.</figcaption>
+        </figure>
+
+        <h3>Test C — Effect of p (p = 0.2 vs p = 0.8)</h3>
+        <p>
+        I compared two simulations with <code>p = 0.2</code> and <code>p = 0.8</code>, both with m = 200 and N = 1000.
+        The measured values were:
+        </p>
+        <ul>
+        <li>p = 0.2 → mean = 0.2005 · std ≈ 0.0124</li>
+        <li>p = 0.8 → mean = 0.7999 · std ≈ 0.0116</li>
+        </ul>
+        <p>
+        Both results show nearly identical dispersion, confirming that the variance of <code>f(n)</code> depends only on <code>p·(1−p)</code>.
+        The two histograms are symmetric with respect to p = 0.5, and the shape remains the same apart from the shifted center.
+        </p>
+        <figure>
+        <img src="images/hmwk4_testC_02.png" alt="Test C — p=0.2" class="screenshot">
+        <figcaption>Figure C1 — Convergence for p = 0.2.</figcaption>
+        </figure>
+        <figure>
+        <img src="images/hmwk4_testC_08.png" alt="Test C — p=0.8" class="screenshot">
+        <figcaption>Figure C2 — Convergence for p = 0.8 (same dispersion, opposite side).</figcaption>
+        </figure>
+
+        <h3>Test D — Effect of m (number of trajectories)</h3>
+        <p>
+        To study the influence of the number of trajectories, I compared runs with <code>m = 20</code> and <code>m = 1000</code>
+        using p = 0.6 and N = 1000.
+        The results were:
+        </p>
+        <ul>
+        <li>m = 20 → mean = 0.6044 · std ≈ 0.0131</li>
+        <li>m = 1000 → mean = 0.6007 · std ≈ 0.0157</li>
+        </ul>
+        <p>
+        The standard deviation is almost the same, since it depends on n rather than m.
+        However, the histogram with m = 20 appears rough and uneven, while with m = 1000 it becomes perfectly smooth.
+        Increasing m improves the precision and visual stability of the mean curve but not the theoretical dispersion itself.
+        </p>
+        <figure>
+        <img src="images/hmwk4_testD_m20.png" alt="Test D — m=20" class="screenshot">
+        <figcaption>Figure D1 — Small number of trajectories (noisy histogram).</figcaption>
+        </figure>
+        <figure>
+        <img src="images/hmwk4_testD_m1000.png" alt="Test D — m=1000" class="screenshot">
+        <figcaption>Figure D2 — Large number of trajectories (smooth convergence).</figcaption>
+        </figure>
+
+        <h3>Results Summary</h3>
+        <p>
+        Across all tests, the results consistently align with the Law of Large Numbers.
+        The running frequency <code>f(n)</code> converges to the true probability <code>p</code>,
+        and the empirical dispersion scales as √(p·(1−p)/n).
+        Increasing n reduces the variability, while increasing m improves the stability of the estimates.
+        The overall behavior matches theoretical expectations both qualitatively and quantitatively.
+        </p>
+
+  
+        <h2>Conclusion</h2>
+        <p>
+          Through this experiment I observe that the relative frequency of success stabilizes around the underlying probability <code>p</code> as the number of trials increases.
+          The simulation provides an intuitive, empirical confirmation of the Law of Large Numbers.
+        </p>
+  
+        <hr>
+        <p class="back"><a href="index.html">← Back to all homework</a></p>
+      </article>
+    </main>
+    <footer class="site-footer container">
+        <p>© <span id="y"></span> Statistics Homework · <strong>Anastasiia Baranovska</strong></p>
+    </footer>
+      <!-- ============ JS ============ -->
+  <script>
+    // ==== Utilities ====
+    const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
+    function mulberry32(a){return function(){var t=a+=0x6D2B79F5; t=Math.imul(t^t>>>15,t|1); t^=t+Math.imul(t^t>>>7,t|61); return ((t^t>>>14)>>>0)/4294967296;}}
+    function strHash(s){let h=1779033703^s.length; for(let i=0;i<s.length;i++){h=Math.imul(h^s.charCodeAt(i),3432918353); h=h<<13|h>>>19;} return (h>>>0);}
+    function clear(ctx){ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height); ctx.restore();}
+
+    // ==== State ====
+    let STATE = {
+      p:0.6, m:200, N:1000,
+      step:0, running:false,
+      rng:Math.random,
+      data:[],     // [{x:[0/1...], f:[0..1...]}]
+      means:[],    // mean of f(n) across trajectories
+      fAtStep:[],  // f_i(step) for histogram
+      bins:30
+    };
+
+    // ==== DOM helpers ====
+    const $ = id => document.getElementById(id);
+
+    // ==== Layout / scales ====
+    const PAD={l:48, r:18, t:18, b:28};
+    const HPAD={l:24, r:48, t:18, b:28};
+    function xScale(n, W){return PAD.l + (W-PAD.l-PAD.r)*(n/STATE.N);}
+    function yScaleF(f, H){return PAD.t + (1-f)*(H-PAD.t-PAD.b);}
+    function yScaleHist(f, H){return HPAD.t + (1-f)*(H-HPAD.t-HPAD.b);}
+
+    // ==== Drawing (main chart) ====
+    function drawGrid(tctx, W, H){
+      clear(tctx);
+      tctx.strokeStyle='#e5e7eb'; tctx.globalAlpha=0.5; tctx.lineWidth=1;
+      tctx.fillStyle='#111827'; tctx.font='12px Inter'; tctx.textAlign='right'; tctx.textBaseline='middle';
+      for(const f of [0,0.25,0.5,0.75,1]){
+        const y=yScaleF(f,H); tctx.beginPath(); tctx.moveTo(PAD.l,y); tctx.lineTo(W-PAD.r,y); tctx.stroke();
+        tctx.globalAlpha=1; tctx.fillText(f.toFixed(2), PAD.l-6, y); tctx.globalAlpha=.5;
+      }
+      tctx.textAlign='center'; tctx.textBaseline='top';
+      const xs=[0, STATE.N*0.25, STATE.N*0.5, STATE.N*0.75, STATE.N];
+      for(const xv of xs){
+        const x=xScale(xv,W); tctx.beginPath(); tctx.moveTo(x, PAD.t); tctx.lineTo(x, H-PAD.b); tctx.stroke();
+        tctx.globalAlpha=1; tctx.fillText(Math.round(xv), x, H-PAD.b+8); tctx.globalAlpha=.5;
+      }
+    }
+    function drawTrajectories(tctx, W, H, k){
+      tctx.lineWidth=1; tctx.strokeStyle='rgba(96,165,250,0.25)';
+      for(let i=0;i<STATE.m;i++){
+        const f=STATE.data[i].f; tctx.beginPath();
+        for(let n=0;n<=k;n++){
+          const x=xScale(n,W), y=yScaleF(f[n],H);
+          if(n===0) tctx.moveTo(x,y); else tctx.lineTo(x,y);
+        }
+        tctx.stroke();
+      }
+    }
+    function drawOverlays(tctx, W, H, k){
+      // true p
+      tctx.strokeStyle='#f59e0b'; tctx.setLineDash([6,6]); tctx.lineWidth=1.5; tctx.beginPath();
+      tctx.moveTo(PAD.l, yScaleF(STATE.p,H)); tctx.lineTo(W-PAD.r, yScaleF(STATE.p,H)); tctx.stroke(); tctx.setLineDash([]);
+
+      // mean f(n)
+      tctx.strokeStyle='#10b981'; tctx.lineWidth=2; tctx.beginPath();
+      for(let n=0;n<=k;n++){
+        const x=xScale(n,W), y=yScaleF(STATE.means[n],H);
+        if(n===0) tctx.moveTo(x,y); else tctx.lineTo(x,y);
+      }
+      tctx.stroke();
+
+      // cursor n=k
+      tctx.strokeStyle='rgba(167,139,250,.8)'; tctx.lineWidth=1; tctx.beginPath();
+      const xc=xScale(k,W); tctx.moveTo(xc, PAD.t); tctx.lineTo(xc, H-PAD.b); tctx.stroke();
+    }
+
+    // ==== Drawing (histogram) ====
+    function drawHistFrame(hctx, W, H){
+      clear(hctx);
+      hctx.strokeStyle='#e5e7eb'; hctx.globalAlpha=0.5; hctx.lineWidth=1; hctx.fillStyle='#111827'; hctx.font='12px Inter'; hctx.textAlign='left'; hctx.textBaseline='middle';
+      for(const f of [0,0.25,0.5,0.75,1]){
+        const y=yScaleHist(f,H); hctx.beginPath(); hctx.moveTo(HPAD.l, y); hctx.lineTo(W-HPAD.r, y); hctx.stroke();
+        hctx.globalAlpha=1; hctx.fillText(f.toFixed(2), 6, y); hctx.globalAlpha=.5;
+      }
+    }
+    function drawHistogram(hctx, W, H, k){
+      drawHistFrame(hctx, W, H);
+      const wInner = W-HPAD.l-HPAD.r, bh=(H-HPAD.t-HPAD.b)/STATE.bins;
+
+      // collect f_i(k)
+      const arr = new Array(STATE.m); for(let i=0;i<STATE.m;i++) arr[i]=STATE.data[i].f[k];
+      STATE.fAtStep = arr;
+
+      // binning on [0,1]
+      const counts=new Array(STATE.bins).fill(0);
+      for(const v of arr){ let idx=Math.floor(clamp(v,0,0.999999)*STATE.bins); counts[idx]++; }
+      const maxC = Math.max(1, ...counts);
+
+      // horizontal bars
+      hctx.fillStyle='rgba(96,165,250,.9)'; hctx.globalAlpha=1;
+      for(let i=0;i<STATE.bins;i++){
+        const yTop = HPAD.t + (STATE.bins-1-i)*bh;
+        const barW = (counts[i]/maxC)*wInner;
+        hctx.fillRect(HPAD.l, yTop+1, barW, bh-2);
+      }
+
+      // line at p
+      hctx.strokeStyle='#f59e0b'; hctx.lineWidth=2; hctx.beginPath();
+      const yp = yScaleHist(STATE.p,H); hctx.moveTo(HPAD.l, yp); hctx.lineTo(HPAD.l+wInner, yp); hctx.stroke();
+    }
+
+    // ==== Stats text ====
+    function updateStats(k){
+      const fArr=STATE.fAtStep.length? STATE.fAtStep : (STATE.data.map(d=>d.f[k]));
+      const m=fArr.length||1; let mean=0; for(const v of fArr) mean+=v; mean/=m;
+      let v=0; for(const x of fArr) v+=(x-mean)*(x-mean); v/=m;
+      const rmse=Math.sqrt(v);
+      $('run-summary').textContent = `n=${k+1} / ${STATE.N} · m=${STATE.m} · p=${STATE.p}`;
+      $('stats').textContent = `mean f(n)=${mean.toFixed(4)} · std≈${rmse.toFixed(4)}`;
+    }
+
+    function drawAll(tctx,trajW,trajH,hctx,histW,histH){
+      drawGrid(tctx,trajW,trajH);
+      drawTrajectories(tctx,trajW,trajH,STATE.step);
+      drawOverlays(tctx,trajW,trajH,STATE.step);
+      drawHistogram(hctx,histW,histH,STATE.step);
+      updateStats(STATE.step);
+    }
+
+    // ==== Simulation ====
+    function regenerate(){
+      const p=parseFloat($('p').value)||0.6;
+      const m=parseInt($('m').value,10)||200;
+      const N=parseInt($('N').value,10)||1000;
+      STATE.p=clamp(p,0,1); STATE.m=clamp(m,1,1000); STATE.N=clamp(N,10,5000);
+      STATE.step=0; STATE.running=false; STATE.data=[]; STATE.means=[]; STATE.fAtStep=[];
+
+      const seedStr=$('seed').value.trim();
+      if(seedStr){ STATE.rng=mulberry32(strHash(seedStr)); } else { STATE.rng=Math.random; }
+
+      // pre-generate trajectories
+      for(let i=0;i<STATE.m;i++){
+        const arr=new Array(STATE.N); let s=0; const f=new Array(STATE.N);
+        for(let n=0;n<STATE.N;n++){
+          const u = (seedStr?STATE.rng():Math.random());
+          const x = u < STATE.p ? 1 : 0;
+          arr[n]=x; s+=x; f[n]=s/(n+1);
+        }
+        STATE.data.push({x:arr, f:f});
+      }
+      // precompute mean f(n)
+      for(let n=0;n<STATE.N;n++){
+        let sum=0; for(let i=0;i<STATE.m;i++) sum+=STATE.data[i].f[n];
+        STATE.means[n]=sum/STATE.m;
+      }
+    }
+
+    // ==== Animation ====
+    let RAF=null, lastTs=0, acc=0;
+    function stepOnce(tctx,trajW,trajH,hctx,histW,histH){
+      if(STATE.step>=STATE.N-1){ STATE.running=false; return; }
+      STATE.step++; drawAll(tctx,trajW,trajH,hctx,histW,histH);
+    }
+    function loop(ts,tctx,trajW,trajH,hctx,histW,histH){
+      if(!STATE.running){ RAF=null; return; }
+      if(!lastTs) lastTs=ts; const dt=(ts-lastTs)/1000; lastTs=ts; acc+=dt;
+      const stepTime = 1/parseInt(($('speed').value||30),10);
+      while(acc>=stepTime){ acc-=stepTime; stepOnce(tctx,trajW,trajH,hctx,histW,histH); }
+      RAF=requestAnimationFrame((nts)=>loop(nts,tctx,trajW,trajH,hctx,histW,histH));
+    }
+
+    // ==== Boot ====
+    window.onload = function(){
+      const traj = $('traj'), hist=$('hist');
+      const tctx = traj.getContext('2d'), hctx = hist.getContext('2d');
+      const dpr = window.devicePixelRatio||1;
+
+      function resize(){
+        const tw = traj.clientWidth, th = traj.clientHeight;
+        const hw = hist.clientWidth, hh = hist.clientHeight;
+        traj.width = tw * dpr;
+        traj.height = th * dpr;
+        hist.width = hw * dpr;
+        hist.height = hh * dpr;
+        tctx.setTransform(dpr,0,0,dpr,0,0);
+        hctx.setTransform(dpr,0,0,dpr,0,0);
+        drawAll(tctx, traj.width/dpr, traj.height/dpr, hctx, hist.width/dpr, hist.height/dpr);
+        }
+      window.addEventListener('resize', resize);
+
+      // controls
+      $('btn-generate').addEventListener('click', ()=>{ regenerate(); resize(); });
+      $('btn-start').addEventListener('click', ()=>{ if(STATE.step>=STATE.N-1) return; STATE.running=true; if(!RAF) RAF=requestAnimationFrame((ts)=>loop(ts,tctx,traj.width/dpr,traj.height/dpr,hctx,hist.width/dpr,hist.height/dpr)); });
+      $('btn-pause').addEventListener('click', ()=>{ STATE.running=false; });
+      $('btn-step').addEventListener('click', ()=>{ if(STATE.step<STATE.N-1) stepOnce(tctx,traj.width/dpr,traj.height/dpr,hctx,hist.width/dpr,hist.height/dpr); });
+      $('btn-reset').addEventListener('click', ()=>{ STATE.step=0; STATE.running=false; drawAll(tctx,traj.width/dpr,traj.height/dpr,hctx,hist.width/dpr,hist.height/dpr); });
+
+      // init
+      regenerate();
+      resize();
+      $('y').textContent = new Date().getFullYear();
+    };
+  </script>
+</body>
+</html>
+    
+  
+  
+
+
+

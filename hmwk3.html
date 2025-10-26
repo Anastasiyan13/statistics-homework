@@ -24,6 +24,7 @@
       <a href="hmwk1.html" class="nav-link">HMWK 1</a>
       <a href="hmwk2.html" class="nav-link">HMWK 2</a>
       <a href="hmwk3.html" class="nav-link active">HMWK 3</a>
+      <a href="hmwk4.html" class="nav-link active">HMWK 4</a>
     </nav>
   </header>
 
@@ -40,7 +41,7 @@
       <p>
         This homework repeats the idea of Homework II (frequency analysis),
         but replaces the Caesar cipher with <strong>RSA encryption</strong>.
-        We use very small prime numbers to make the process visible and easy to verify.
+        I use very small prime numbers to make the process visible and easy to verify.
       </p>
       <ul>
         <li><strong>Public key:</strong> (e, n)</li>
@@ -49,7 +50,7 @@
         <li>Decryption: <code>M = C^d mod n</code></li>
       </ul>
       <p>
-        Since we encrypt one letter at a time (no padding, no block mode),
+        Since I encrypt one letter at a time (no padding, no block mode),
         the mapping is a <em>simple permutation</em> of the alphabet —
         letter frequencies are preserved, and thus a naive frequency attack can still work.
       </p>
@@ -142,11 +143,11 @@
 
       <h2>Experimental Tests</h2>
         <p>
-        To better understand how RSA encryption behaves when applied to individual characters,
-        four experimental tests were performed using the JavaScript tool above.
-        Each test uses different message structures or key parameters to observe
-        how frequency patterns appear in ciphertexts and how effectively a simple
-        frequency-based attack can recover information.
+            To better understand how RSA encryption behaves when applied to individual characters,
+            I performed four experimental tests using the JavaScript tool above.
+            Each test uses different message structures or key parameters to observe
+            how frequency patterns appear in ciphertexts and how effectively a simple
+            frequency-based attack can recover information.
         </p>
 
 
