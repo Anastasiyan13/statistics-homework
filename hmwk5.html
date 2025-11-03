@@ -171,22 +171,25 @@
     <h2>Derivation</h2>
     <h3>1) Mean (easy)</h3>
     <p>
-    Let <code>n−1</code> points have mean <code>m<sub>n−1</sub></code>. With a new value <code>x<sub>n</sub></code>:
+    Let <code>n−1</code> points have mean <code>m<sub>n−1</sub></code>.
+    When a new value <code>x<sub>n</sub></code> arrives:
     </p>
     <p class="mono small">
     m<sub>n</sub> = m<sub>n−1</sub> + (x<sub>n</sub> − m<sub>n−1</sub>)/n
     </p>
-    <p class="muted small">This is just the algebraic rearrangement of the definition of the average.</p>
+    <p class="muted small">
+    This is just an algebraic rearrangement of the definition of the mean.
+    </p>
 
     <h3>2) Variance (numerically stable update)</h3>
     <p>
     Define <code>M2</code> as the running sum of squared deviations from the mean:
     <code>M2<sub>n</sub> = Σ<sub>i=1..n</sub>(x<sub>i</sub> − m<sub>n</sub>)²</code>.
-    When the new sample arrives:
+    When the new sample <code>x<sub>n</sub></code> arrives:
     </p>
     <ol>
     <li><code>n ← n−1 + 1</code></li>
-    <li><code>δ  = x<sub>n</sub> − m<sub>n−1</sub></code></li>
+    <li><code>δ = x<sub>n</sub> − m<sub>n−1</sub></code></li>
     <li><code>m<sub>n</sub> = m<sub>n−1</sub> + δ / n</code></li>
     <li><code>δ₂ = x<sub>n</sub> − m<sub>n</sub></code></li>
     <li><code>M2<sub>n</sub> = M2<sub>n−1</sub> + δ · δ₂</code></li>
@@ -199,9 +202,10 @@
     <li><strong>Sample variance</strong> (unbiased): <code>s² = M2 / (n − 1)</code> (for <code>n ≥ 2</code>)</li>
     </ul>
     <p class="muted small">
-    These recurrences are the classic Welford/Knuth online updates; they avoid the catastrophic 
-    cancellation of the naïve one-pass formula.
+    These recurrences are the classic Welford/Knuth online updates; they avoid
+    catastrophic cancellation of the naïve one-pass formula.
     </p>
+
 
     <h2>Minimal Working Code (JS)</h2>
     <section class="tool glass" style="padding:12px;border-radius:14px">
