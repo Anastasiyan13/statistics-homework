@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HMWK 8 · Bernoulli Processes, Binomial Structure & Combinatorial Links</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="bg-gradient" style="pointer-events:none; z-index:-1;"></div>
+
+  <header class="site-header container">
+    <a class="brand" href="index.html">📊 Statistics</a>
+    <nav class="nav">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="hmwk1.html" class="nav-link">HMWK 1</a>
+      <a href="hmwk2.html" class="nav-link">HMWK 2</a>
+      <a href="hmwk3.html" class="nav-link">HMWK 3</a>
+      <a href="hmwk4.html" class="nav-link">HMWK 4</a>
+      <a href="hmwk5.html" class="nav-link">HMWK 5</a>
+      <a href="hmwk6.html" class="nav-link">HMWK 6</a>
+      <a href="hmwk7.html" class="nav-link">HMWK 7</a>
+      <a href="hmwk8.html" class="nav-link active">HMWK 8</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="post glass">
+      <div class="post-meta">
+        <span class="badge">HMWK 8</span>
+        <span>—</span>
+        <span>Comparative Essay</span>
+      </div>
+
+      <h1>Bernoulli Processes, Binomial Structure & Combinatorial Links</h1>
+
+      <h2>Goal</h2>
+      <p>
+        In this homework I discuss the analogies (and key differences) between the
+        <em>Law of Large Numbers (LLN)</em> simulation of <strong>HMWK&nbsp;4</strong> and the
+        <em>random-walk / binomial</em> experiment of <strong>HMWK&nbsp;7</strong>.
+        I then connect both to classical combinatorial structures: binomial coefficients,
+        Pascal’s triangle, the binomial expansion, and their relationships (including the link to
+        the Fibonacci sequence via shallow diagonals).
+      </p>
+
+      <h2>1) Bernoulli process as the common core</h2>
+      <ul>
+        <li>
+          <strong>HMWK 4 (LLN).</strong> I simulated i.i.d. Bernoulli(<code>p</code>) trials and tracked the
+          <em>relative frequency</em> <code>f(n)=K/n</code>, with <code>K</code> successes in <code>n</code> trials.
+          The LLN states that <code>f(n) → p</code> as <code>n → ∞</code>.
+        </li>
+        <li>
+          <strong>HMWK 7 (Random walk).</strong> I modeled weekly server security as steps <code>X_t∈{+1,−1}</code>.
+          With secure-week probability <code>q=(1−p)^m</code>, the cumulative score is
+          <code>Sₙ = ∑ X_t = 2K − n</code>, where <code>K ~ Binomial(n,q)</code>.
+        </li>
+      </ul>
+
+      <p class="muted small">
+        Same Bernoulli engine, different observables:
+        <em>HMWK 4</em> focuses on the <strong>mean</strong> (relative frequency), while <em>HMWK 7</em> focuses on the
+        <strong>sum</strong> (random walk). One is centered on convergence to <code>p</code>; the other on the full
+        distribution of possible totals (Binomial) and its mapping to walk endpoints.
+      </p>
+
+      <h2>2) Similarities and differences</h2>
+      <div class="glass" style="padding:10px;border-radius:12px">
+        <ul>
+          <li><strong>Similarities.</strong> Independent Bernoulli trials; counts of success <code>K</code> are
+              Binomial(<code>n, p</code> or <code>n, q</code>); for large <code>n</code> both exhibit Gaussian-like behavior by CLT.</li>
+          <li><strong>Differences.</strong>
+            <ul>
+              <li><em>Quantity observed:</em> <code>f(n)=K/n</code> (LLN) vs. <code>Sₙ=2K−n</code> (random walk).</li>
+              <li><em>Convergence notion:</em> LLN → <code>f(n)→p</code>; random walk → the <em>distribution</em> of <code>Sₙ</code> is Binomially induced.</li>
+              <li><em>Drift:</em> in HMWK 7, <code>E[Sₙ]=n(2q−1)</code>, so the walk has upward/downward drift unless <code>q=1/2</code>.</li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+
+      <h2>3) Binomial coefficients & Pascal’s triangle</h2>
+      <p>
+        The number of ways to obtain exactly <code>K=k</code> successes in <code>n</code> Bernoulli trials is
+        the binomial coefficient <code>C(n,k)=n!/(k!(n−k)!)</code>. These coefficients form
+        <strong>Pascal’s triangle</strong>, where each entry equals the sum of the two above it.
+      </p>
+
+      <div class="glass" style="padding:10px;border-radius:12px; overflow:auto;">
+        <h4 style="margin-top:0">Mini Pascal (rows 0–6)</h4>
+        <pre class="mono small" style="margin:0">
+n=0:                         1
+n=1:                       1   1
+n=2:                     1   2   1
+n=3:                   1   3   3   1
+n=4:                 1   4   6   4   1
+n=5:               1   5  10  10   5   1
+n=6:             1   6  15  20  15   6   1
+        </pre>
+        <p class="muted small" style="margin-top:6px">
+          Each row <code>n</code> provides all the <code>C(n,k)</code> for <code>k=0..n</code>, which weight the probabilities
+          in the Binomial distribution and count the number of random-walk paths that end at a given sum.
+        </p>
+      </div>
+
+      <h2>4) Binomial expansion & probability mass function</h2>
+      <p>
+        The Binomial theorem states
+        <span class="mono">(a+b)^n = ∑<sub>k=0..n</sub> C(n,k) a^{n−k} b^k</span>.
+        Setting <span class="mono">a=q</span> and <span class="mono">b=(1−q)</span> gives
+        <span class="mono">1 = (q + (1−q))^n = ∑ C(n,k) q^k (1−q)^{n−k}</span>,
+        i.e. the probabilities over all <span class="mono">k</span> sum to 1.
+      </p>
+
+      <h2>5) Random-walk paths counted by coefficients</h2>
+      <p>
+        A length-<code>n</code> walk with steps <code>+1</code> (secure) and <code>−1</code> (breach) reaches
+        <code>Sₙ = 2k−n</code> exactly when there are <code>k</code> upward steps. The number of distinct paths with
+        that endpoint is <code>C(n,k)</code>. This is the same coefficient appearing in:
+      </p>
+      <ul>
+        <li>the <em>combinatorial</em> count of sequences with <code>k</code> successes,</li>
+        <li>the <em>probabilistic</em> weight in Binomial(<code>n,q</code>),</li>
+        <li>the <em>algebraic</em> coefficient in the expansion of <span class="mono">(q + (1−q))^n</span>.</li>
+      </ul>
+
+      <h2>6) Shallow diagonals & Fibonacci numbers</h2>
+      <p>
+        Summing the shallow diagonals of Pascal’s triangle yields the Fibonacci sequence:
+        <span class="mono">F₀=0, F₁=1, F₂=1, F₃=2, F₄=3, F₅=5, …</span>
+        In combinatorial terms, <span class="mono">F_{n}</span> counts certain restricted binary strings or constrained paths.
+        One classic identity is
+        <span class="mono">F_{n} = ∑ C(n−1−k, k)</span> (sum over feasible <span class="mono">k</span>),
+        which can be visualized as a sum along “shallow” diagonals in Pascal.
+      </p>
+
+      <h2>7) Moments, scaling & limits</h2>
+      <ul>
+        <li><strong>LLN (HMWK 4):</strong> <span class="mono">E[f(n)] = p</span> and
+            <span class="mono">Var[f(n)] = p(1−p)/n</span> → dispersion shrinks as <span class="mono">1/n</span>.</li>
+        <li><strong>Random walk (HMWK 7):</strong> with weekly secure prob <span class="mono">q</span>,
+            <span class="mono">E[Sₙ]=n(2q−1)</span>, <span class="mono">Var[Sₙ]=4n q(1−q)</span>.
+            After centering and scaling by <span class="mono">√n</span>, the distribution tends to Normal (CLT).</li>
+      </ul>
+
+      <h2>8) Takeaways</h2>
+      <ul>
+        <li>Both HMWK 4 and HMWK 7 are different “views” of the same Bernoulli mechanism:
+            the <em>average</em> (frequency) versus the <em>sum</em> (walk).</li>
+        <li>Binomial coefficients are the combinatorial backbone:
+            they count sequences, weight probabilities, and build Pascal’s triangle and the binomial expansion.</li>
+        <li>Classical sequences (e.g., Fibonacci) emerge from the same triangle via diagonal sums,
+            highlighting deep links between probability, algebra, and combinatorics.</li>
+      </ul>
+
+      <h2>References</h2>
+      <ul>
+        <li><a href="https://en.wikipedia.org/wiki/Bernoulli_trial" target="_blank" rel="noopener">Bernoulli Trial — Wikipedia</a></li>
+        <li><a href="https://en.wikipedia.org/wiki/Binomial_distribution" target="_blank" rel="noopener">Binomial Distribution — Wikipedia</a></li>
+        <li><a href="https://en.wikipedia.org/wiki/Pascal%27s_triangle" target="_blank" rel="noopener">Pascal’s Triangle — Wikipedia</a></li>
+        <li><a href="https://en.wikipedia.org/wiki/Binomial_theorem" target="_blank" rel="noopener">Binomial Theorem — Wikipedia</a></li>
+        <li><a href="https://en.wikipedia.org/wiki/Fibonacci_number" target="_blank" rel="noopener">Fibonacci Numbers — Wikipedia</a></li>
+        <li><a href="https://en.wikipedia.org/wiki/Central_limit_theorem" target="_blank" rel="noopener">Central Limit Theorem — Wikipedia</a></li>
+      </ul>
+
+      <hr />
+      <p class="back"><a href="index.html">← Back to all homework</a></p>
+    </article>
+  </main>
+
+  <footer class="site-footer container">
+    <p>© <span id="y"></span> Statistics Homework · <strong>Anastasiia Baranovska</strong></p>
+  </footer>
+  <script>document.getElementById('y').textContent = new Date().getFullYear();</script>
+</body>
+</html>
+
