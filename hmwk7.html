@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HMWK 7 · Random Walk of Server Security & Binomial Convergence</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="bg-gradient" style="pointer-events:none; z-index:-1;"></div>
+
+  <header class="site-header container">
+    <a class="brand" href="index.html">📊 Statistics</a>
+    <nav class="nav">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="hmwk1.html" class="nav-link">HMWK 1</a>
+      <a href="hmwk2.html" class="nav-link">HMWK 2</a>
+      <a href="hmwk3.html" class="nav-link">HMWK 3</a>
+      <a href="hmwk4.html" class="nav-link">HMWK 4</a>
+      <a href="hmwk5.html" class="nav-link">HMWK 5</a>
+      <a href="hmwk6.html" class="nav-link">HMWK 6</a>
+      <a href="hmwk7.html" class="nav-link active">HMWK 7</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="post glass">
+      <div class="post-meta">
+        <span class="badge">HMWK 7</span>
+        <span>—</span>
+        <span>Random Walk & Binomial</span>
+      </div>
+
+      <h1>Random Walk of Server Security & Convergence to the Binomial</h1>
+
+      <h2>Goal</h2>
+      <p>
+        I model weekly server security as a random walk with <code>+1</code> for a secure week and <code>−1</code> for a breached week.
+        With <code>m</code> independent attackers each with breach probability <code>p</code>, a week is secure with probability
+        <code>q = (1 − p)^m</code>. I simulate many trajectories over <code>n</code> weeks, build the empirical distribution
+        of the final score <code>Sₙ</code>, and compare it with the theoretical Binomial model.
+      </p>
+
+      <h2>Theory</h2>
+      <ol>
+        <li><strong>Weekly outcomes.</strong> Secure iff nobody breaches:
+          <span class="mono">P(Secure)=q=(1−p)^m</span> and <span class="mono">P(Breach)=1−q</span>.
+        </li>
+        <li><strong>Random walk mapping.</strong> Let <span class="mono">Xₜ∈{+1,−1}</span>.
+          If <span class="mono">K</span> weeks are secure, then <span class="mono">Sₙ=∑Xₜ=2K−n</span>.
+        </li>
+        <li><strong>Distribution.</strong> <span class="mono">K~Binomial(n,q)</span> ⇒
+          <span class="mono">P(Sₙ=2k−n)=C(n,k) q^k (1−q)^{n−k}</span>, <span class="mono">k=0..n</span>.
+        </li>
+        <li><strong>Moments.</strong> <span class="mono">E[Sₙ]=n(2q−1)</span>, <span class="mono">Var[Sₙ]=4nq(1−q)</span>.
+        </li>
+      </ol>
+
+      <h2>Interactive Experiment (JS)</h2>
+      <section class="tool glass" style="padding:12px;border-radius:14px">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+          <div>
+            <label>n (weeks)</label><br>
+            <input id="weeks" type="number" min="1" max="1000" step="1" value="52" style="width:120px;padding:6px;border-radius:8px;">
+          </div>
+          <div>
+            <label>m (attackers / week)</label><br>
+            <input id="attackers" type="number" min="1" max="10000" step="1" value="5" style="width:140px;padding:6px;border-radius:8px;">
+          </div>
+          <div>
+            <label>p (breach prob / attacker)</label><br>
+            <input id="p" type="number" min="0" max="1" step="0.001" value="0.08" style="width:140px;padding:6px;border-radius:8px;">
+          </div>
+          <div>
+            <label>T (trajectories)</label><br>
+            <input id="trajs" type="number" min="1" max="200000" step="100" value="10000" style="width:140px;padding:6px;border-radius:8px;">
+          </div>
+          <button id="btn-run" class="btn">Run simulation</button>
+        </div>
+
+        <div class="kpi-grid" 
+                style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+                        gap:12px;margin-top:12px;width:100%;">
+            <div class="glass" style="padding:8px;border-radius:10px;min-width:0">
+                <h4>Secure prob q=(1−p)^m</h4>
+                <div class="mono"><span id="kpi-q">—</span></div>
+            </div>
+            <div class="glass" style="padding:8px;border-radius:10px;min-width:0">
+                <h4>E[Sₙ]</h4>
+                <div class="mono"><span id="kpi-mean">—</span></div>
+            </div>
+            <div class="glass" style="padding:8px;border-radius:10px;min-width:0">
+                <h4>Var[Sₙ]</h4>
+                <div class="mono"><span id="kpi-var">—</span></div>
+            </div>
+            <div class="glass" style="padding:8px;border-radius:10px;min-width:0">
+                <h4>χ² vs Binomial</h4>
+                <div class="mono"><span id="kpi-chisq">—</span></div>
+            </div>
+            </div>
+
+
+        <h3 style="margin-top:14px;">Histogram of final score Sₙ</h3>
+        <div style="border:1px solid var(--border,#e5e7eb);border-radius:12px;padding:8px;background:#fafafa">
+        <canvas id="histCanvas" style="width:100%;height:220px;display:block;"></canvas>
+        <div class="muted small" style="margin-top:6px;">
+            <span class="pill" style="background:#e9f5ff;color:#0b5fcc">Empirical</span>
+            <span class="pill" style="background:#fff7e6;color:#9a6700">Theoretical</span>
+        </div>
+        </div>
+
+        <h3 style="margin-top:14px;">Sample trajectories (random walk)</h3>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;">
+          <canvas id="spark1" style="width:100%;height:90px;border:1px dashed #ddd;border-radius:10px;background:#fff;"></canvas>
+          <canvas id="spark2" style="width:100%;height:90px;border:1px dashed #ddd;border-radius:10px;background:#fff;"></canvas>
+          <canvas id="spark3" style="width:100%;height:90px;border:1px dashed #ddd;border-radius:10px;background:#fff;"></canvas>
+          <canvas id="spark4" style="width:100%;height:90px;border:1px dashed #ddd;border-radius:10px;background:#fff;"></canvas>
+        </div>
+      </section>
+
+      <h2>Method (summary)</h2>
+      <ol>
+        <li>Compute <span class="mono">q=(1−p)^m</span>.</li>
+        <li>Simulate <span class="mono">T</span> trajectories of length <span class="mono">n</span> with steps <span class="mono">+1</span> (prob q) or <span class="mono">−1</span> (prob 1−q).</li>
+        <li>Build the histogram of <span class="mono">Sₙ</span> over the support <span class="mono">{−n,−n+2,…,+n}</span>.</li>
+        <li>Overlay theoretical counts from <span class="mono">K~Binomial(n,q)</span> mapped via <span class="mono">Sₙ=2K−n</span>.</li>
+        <li>Report <span class="mono">χ²</span> (empirical vs expected) as a goodness-of-fit index.</li>
+          
+      </ol>
+
+      <h2>Observation</h2>
+      <ul>
+        <li>For fixed <span class="mono">p</span>, increasing <span class="mono">m</span> decreases <span class="mono">q=(1−p)^m</span>, shifting the distribution of <span class="mono">Sₙ</span> left (more breaches → more −1 steps).</li>
+        <li>As the number of trajectories <span class="mono">T</span> grows, empirical bars approach the Binomial prediction and <span class="mono">χ²</span> decreases.</li>
+        <li>For large <span class="mono">n</span>, the shape of <span class="mono">Sₙ</span> becomes approximately normal, with mean <span class="mono">n(2q−1)</span> and variance <span class="mono">4nq(1−q)</span> (CLT).</li>
+      </ul>      
+
+      <h2>Experimental Results</h2>
+        <h3>Test A — Baseline (n=52, m=5, p=0.08, T=10000)</h3>
+        <p>
+        Measured: q=<strong>0.659082</strong>, E[Sₙ]=<strong>16.544</strong>, Var[Sₙ]=<strong>46.736</strong>, χ²=<strong>25.321</strong>.  
+        Expected (theory): q≈0.6591, E[Sₙ]≈16.54, Var[Sₙ]≈46.74.
+        </p>
+        <figure>
+        <img src="images/hmwk7_testA.png" alt="Test A — Baseline histogram vs Binomial" class="screenshot">
+        <figcaption class="subtle">Empirical (blue) vs theoretical (orange); strong alignment, centered near +16.</figcaption>
+        </figure>
+        <p class="muted">
+            <strong>Commentary.</strong> With <span class="mono">q≈0.659</span>, secure weeks dominate. The random walk drifts upward
+            giving <span class="mono">E[Sₙ]≈+16.5</span>. Empirical and theoretical bars are tightly aligned (low <span class="mono">χ²</span>),
+            which illustrates that the final score distribution is exactly the Binomial reparametrized via <span class="mono">Sₙ=2K−n</span>.
+        </p>          
+
+        <h3>Test B — Near-symmetric (q≈0.5, n=52, m=7, p=0.10, T=10000)</h3>
+        <p>
+        Measured: q=<strong>0.478297</strong>, E[Sₙ]=<strong>−2.257</strong>, Var[Sₙ]=<strong>51.902</strong>, χ²=<strong>35.793</strong>.  
+        Expected (theory): q≈0.4783, E[Sₙ]≈−2.26, Var[Sₙ]≈51.90.
+        </p>
+        <figure>
+        <img src="images/hmwk7_testB.png" alt="Test B — Near-symmetric histogram vs Binomial" class="screenshot">
+        <figcaption class="subtle">
+            Histogram centered around Sₙ≈0 with balanced positive/negative outcomes.
+        </figcaption>
+        </figure>
+        <p class="muted">
+            <strong>Commentary.</strong> Choosing <span class="mono">m=7, p=0.10</span> makes <span class="mono">q≈0.478</span>, close to one half.
+            The walk has almost no drift and the histogram is centered near zero
+            (<span class="mono">E[Sₙ]≈−2.26</span>). Variance matches theory and the slight left shift is consistent with <span class="mono">q&lt;0.5</span>.
+          </p>          
+
+        <h3>Test C — Many attackers (n=52, m=50, p=0.08, T=10000)</h3>
+        <p>
+        Measured: q=<strong>0.015466</strong>, E[Sₙ]=<strong>−50.391</strong>, Var[Sₙ]=<strong>3.167</strong>, χ²=<strong>2.072</strong>.  
+        Expected (theory): q≈0.0155, E[Sₙ]≈−50.39, Var[Sₙ]≈3.17.
+        </p>
+        <figure>
+        <img src="images/hmwk7_testC.png" alt="Test C — Many attackers histogram vs Binomial" class="screenshot">
+        <figcaption class="subtle">
+            Distribution concentrated near −n, as secure weeks are extremely rare.
+        </figcaption>
+        </figure>
+        <p class="muted">
+            <strong>Commentary.</strong> With <span class="mono">m=50</span> attackers and <span class="mono">p=0.08</span>, a secure week is extremely rare
+            (<span class="mono">q≈0.0155</span>). The random walk almost always steps −1, so <span class="mono">Sₙ</span> concentrates near
+            <span class="mono">−n</span>. The very small variance and tiny <span class="mono">χ²</span> reflect the near-degenerate Binomial.
+          </p>          
+
+        <h3>Test D — Convergence as T grows (n=52, m=5, p=0.08)</h3>
+        <p>
+        Varying T demonstrates how sampling noise decreases and empirical frequencies converge toward the theoretical Binomial.
+        </p>
+        <ul>
+        <li><strong>T = 200</strong> → χ² = <strong>43.957</strong></li>
+        <li><strong>T = 2000</strong> → χ² = <strong>29.524</strong></li>
+        <li><strong>T = 20000</strong> → χ² = <strong>17.778</strong></li>
+        </ul>
+        <figure>
+        <img src="images/hmwk7_testD_200.png" alt="Test D — T=200" class="screenshot">
+        </figure>
+        <figure>
+        <img src="images/hmwk7_testD_2000.png" alt="Test D — T=2000" class="screenshot">
+        </figure>
+        <figure>
+        <img src="images/hmwk7_testD_20000.png" alt="Test D — T=20000" class="screenshot">
+        <figcaption class="subtle">
+            Higher T values yield smoother empirical histograms and closer agreement with theory.
+        </figcaption>
+        </figure>
+        <p class="muted">
+            <strong>Commentary.</strong> Holding parameters fixed while increasing <span class="mono">T</span> reduces sampling noise.
+            The empirical histogram becomes smoother and <span class="mono">χ²</span> drops from <span class="mono">43.96 → 29.52 → 17.78</span>,
+            illustrating convergence to the Binomial law.
+          </p>
+          
+
+        <h2>Discussion</h2>
+        <ul>
+        <li>
+            The simulations confirm that the cumulative server score Sₙ behaves as a
+            <strong>random walk driven by a Binomial process</strong>, perfectly matching theoretical expectations.
+        </li>
+        <li>
+            Increasing <strong>m</strong> (number of attackers) sharply decreases <strong>q</strong>,
+            shifting the distribution left and showing that breaches dominate.
+        </li>
+        <li>
+            When <strong>q ≈ 0.5</strong>, the walk becomes symmetric and fluctuates equally above and below zero.
+        </li>
+        <li>
+            As <strong>T</strong> increases, sampling noise vanishes and χ² decreases,
+            illustrating <strong>empirical convergence</strong> to the Binomial law.
+        </li>
+        <li>
+            For large <strong>n</strong>, the shape of Sₙ tends toward a bell curve, consistent with the
+            <strong>Central Limit Theorem</strong>.
+        </li>
+        </ul>
+
+
+        <h2>References</h2>
+        <ul>
+          <li>
+            <a href="https://en.wikipedia.org/wiki/Random_walk" target="_blank" rel="noopener">
+              Wikipedia — Random Walk
+            </a>: overview of discrete-time random walks and their statistical properties.
+          </li>
+          <li>
+            <a href="https://en.wikipedia.org/wiki/Binomial_distribution" target="_blank" rel="noopener">
+              Wikipedia — Binomial Distribution
+            </a>: definition, moments, and connection to Bernoulli trials.
+          </li>
+          <li>
+            <a href="https://en.wikipedia.org/wiki/Chi-square_test" target="_blank" rel="noopener">
+              Wikipedia — Chi-Square Test
+            </a>: used here as a goodness-of-fit measure for empirical vs theoretical frequencies.
+          </li>
+          <li>
+            <a href="https://en.wikipedia.org/wiki/Central_limit_theorem" target="_blank" rel="noopener">
+              Wikipedia — Central Limit Theorem
+            </a>: explains why Binomial distributions approach the Normal curve for large n.
+          </li>
+        </ul>
+        
+
+      <hr />
+      <p class="back"><a href="index.html">← Back to all homework</a></p>
+    </article>
+  </main>
+
+  <footer class="site-footer container">
+    <p>© <span id="y"></span> Statistics Homework · <strong>Anastasiia Baranovska</strong></p>
+  </footer>
+
+  <script>
+    // ===== Utilities =====
+    const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+    function binomPMF(n, k, q){
+      if(k<0||k>n) return 0;
+      // log C(n,k)
+      let logC=0; for(let i=1;i<=k;i++) logC += Math.log((n-(k-i))/i);
+      return Math.exp(logC + k*Math.log(q) + (n-k)*Math.log(1-q));
+    }
+
+    // ===== Simulation =====
+    function runSim(n, m, p, T){
+      const q = Math.pow(1-p, m);
+
+      // support S in {-n,-n+2,...,+n}
+      const labels=[]; const counts=new Map();
+      for(let S=-n; S<=n; S+=2){ labels.push(S); counts.set(S,0); }
+
+      const sparkPaths=[[],[],[],[]];
+      for(let t=0;t<T;t++){
+        let S=0; if(t<4) sparkPaths[t]=[0];
+        for(let w=0; w<n; w++){
+          const step = (Math.random()<q) ? +1 : -1;
+          S += step;
+          if(t<4) sparkPaths[t].push(S);
+        }
+        counts.set(S, (counts.get(S)||0)+1);
+      }
+
+      // theoretical expected counts from Binomial on K, mapped to S=2K-n
+      const theo=new Map(); let chi2=0;
+      for(let k=0;k<=n;k++){
+        const prob = binomPMF(n,k,q);
+        const S = 2*k - n;
+        const expected = prob * T;
+        theo.set(S, expected);
+        const obs = counts.get(S) || 0;
+        if(expected>0) chi2 += (obs-expected)*(obs-expected)/expected;
+      }
+      return {q, labels, counts, theo, sparkPaths, chi2};
+    }
+
+    // ===== Canvas histogram (no scroll) =====
+    function drawHistogramCanvas(canvasId, labels, counts, theo){
+    const c = document.getElementById(canvasId);
+    const ctx = c.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const W = c.clientWidth, H = c.clientHeight;
+    c.width = W*dpr; c.height = H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
+
+    // paddings
+    const PAD = {l:42, r:12, t:16, b:28};
+
+    // scales
+    const Smin = labels[0], Smax = labels[labels.length-1];
+    const xOf = (S)=> PAD.l + (W-PAD.l-PAD.r) * (S - Smin) / (Smax - Smin || 1);
+
+    const maxVal = Math.max(1, ...labels.map(S => Math.max(counts.get(S)||0, theo.get(S)||0)));
+    const yOf = (v)=> PAD.t + (1 - v/maxVal) * (H - PAD.t - PAD.b);
+
+    // background & grid
+    ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle = '#e5e7eb';
+    ctx.lineWidth = 1;
+
+    // horizontal grid (0, 25%, 50%, 75%, 100% of max)
+    for(const frac of [0,0.25,0.5,0.75,1]){
+        const y = yOf(maxVal*frac);
+        ctx.beginPath(); ctx.moveTo(PAD.l,y); ctx.lineTo(W-PAD.r,y); ctx.stroke();
+        ctx.fillStyle='#111827'; ctx.font='12px Inter'; ctx.textAlign='right'; ctx.textBaseline='middle';
+        ctx.fillText(Math.round(maxVal*frac), PAD.l-6, y);
+    }
+
+    // vertical ticks every 4 steps (to avoid clutter)
+    ctx.fillStyle='#111827'; ctx.font='12px Inter'; ctx.textAlign='center'; ctx.textBaseline='top';
+    const step = Math.max(2, Math.floor((labels.length)/24)*2); // about <=24 ticks
+    for(let i=0;i<labels.length;i+=step){
+        const S = labels[i];
+        const x = xOf(S);
+        ctx.strokeStyle='#eef2f7';
+        ctx.beginPath(); ctx.moveTo(x, PAD.t); ctx.lineTo(x, H-PAD.b); ctx.stroke();
+        ctx.fillText(S, x, H-PAD.b+6);
+    }
+
+    // vertical line at S=0 if in range
+    if (Smin <= 0 && 0 <= Smax){
+        const x0 = xOf(0);
+        ctx.strokeStyle='rgba(17,17,17,.25)'; ctx.lineWidth=1.5;
+        ctx.beginPath(); ctx.moveTo(x0, PAD.t); ctx.lineTo(x0, H-PAD.b); ctx.stroke();
+    }
+
+    // draw paired bars (empirical in front, theoretical behind)
+    const barW = Math.max(2, (W-PAD.l-PAD.r) / labels.length * 0.7); // compress to fit
+    const gap = barW * 0.15;
+
+    labels.forEach(S=>{
+        const emp = counts.get(S)||0;
+        const th  = theo.get(S)||0;
+        const x = xOf(S);
+
+        // theoretical (orange) - slightly wider, behind
+        ctx.fillStyle = '#f59e0b';
+        ctx.globalAlpha = 0.6;
+        ctx.fillRect(x - (barW*0.6), yOf(th), barW*1.2, Math.max(1, (H-PAD.b) - yOf(th)));
+
+        // empirical (blue) - in front
+        ctx.fillStyle = '#3b82f6';
+        ctx.globalAlpha = 1;
+        ctx.fillRect(x - (barW*0.5) + gap, yOf(emp), barW - 2*gap, Math.max(1, (H-PAD.b) - yOf(emp)));
+    });
+    }
+
+
+    // ===== Render: KPIs =====
+    function renderKPI(q, n, chi2){
+      const mean = n*(2*q-1);
+      const variance = 4*n*q*(1-q);
+      document.getElementById('kpi-q').textContent = q.toFixed(6);
+      document.getElementById('kpi-mean').textContent = mean.toFixed(3);
+      document.getElementById('kpi-var').textContent = variance.toFixed(3);
+      document.getElementById('kpi-chisq').textContent = chi2.toFixed(3);
+    }
+
+    // ===== Sparks (small random-walk lines) =====
+    function drawSpark(canvasId, path, n){
+      const c = document.getElementById(canvasId);
+      const ctx = c.getContext('2d');
+      const dpr = window.devicePixelRatio||1;
+      const W = c.clientWidth, H = c.clientHeight;
+      c.width = W*dpr; c.height = H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
+      ctx.clearRect(0,0,W,H);
+
+      const yScale = v => {
+        const frac = (v - (-n)) / (2*n || 1);
+        return (1-frac)*(H-10)+5;
+      };
+      // midline at 0
+      ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(0, yScale(0)); ctx.lineTo(W, yScale(0)); ctx.stroke();
+
+      // path
+      ctx.strokeStyle='#111'; ctx.lineWidth=2; ctx.beginPath();
+      const stepX = (W-10)/Math.max(1, path.length-1);
+      for(let i=0;i<path.length;i++){
+        const x = 5 + i*stepX;
+        const y = yScale(path[i]);
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+    }
+    function renderSparks(paths, n){
+      ['spark1','spark2','spark3','spark4'].forEach((id, i)=>drawSpark(id, paths[i]||[0], n));
+    }
+
+    // ===== Wire controls =====
+    const $ = id => document.getElementById(id);
+    let lastSim = null; 
+    function run(){
+        const n = clamp(parseInt($('weeks').value||'52',10),1,1000);
+        const m = clamp(parseInt($('attackers').value||'5',10),1,10000);
+        const p = clamp(parseFloat($('p').value||'0.08'),0,1);
+        const T = clamp(parseInt($('trajs').value||'10000',10),1,200000);
+
+        // genera una NUOVA simulazione solo quando clicchi "Run simulation"
+        lastSim = runSim(n,m,p,T);
+
+        const {q, labels, counts, theo, sparkPaths, chi2} = lastSim;
+        drawHistogramCanvas('histCanvas', labels, counts, theo);
+        renderKPI(q, n, chi2);
+        renderSparks(sparkPaths, n);
+    }
+    $('btn-run').addEventListener('click', run);
+    // al resize ridisegna usando i dati dell'ultima simulazione
+    window.addEventListener('resize', ()=>{
+    if(!lastSim) return;
+    const n = clamp(parseInt($('weeks').value||'52',10),1,1000);
+    drawHistogramCanvas('histCanvas', lastSim.labels, lastSim.counts, lastSim.theo);
+    renderSparks(lastSim.sparkPaths, n);
+    renderKPI(lastSim.q, n, lastSim.chi2); // KPI invariati (stessa simulazione)
+    });
+
+    // boot
+    run();
+    document.getElementById('y').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
