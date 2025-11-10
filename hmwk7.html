@@ -132,7 +132,7 @@
           
       </ol>
 
-      <h2>Observation</h2>
+      <h2>Observations</h2>
       <ul>
         <li>For fixed <span class="mono">p</span>, increasing <span class="mono">m</span> decreases <span class="mono">q=(1−p)^m</span>, shifting the distribution of <span class="mono">Sₙ</span> left (more breaches → more −1 steps).</li>
         <li>As the number of trajectories <span class="mono">T</span> grows, empirical bars approach the Binomial prediction and <span class="mono">χ²</span> decreases.</li>
@@ -243,29 +243,12 @@
 
         <h2>References</h2>
         <ul>
-          <li>
-            <a href="https://en.wikipedia.org/wiki/Random_walk" target="_blank" rel="noopener">
-              Wikipedia — Random Walk
-            </a>: overview of discrete-time random walks and their statistical properties.
-          </li>
-          <li>
-            <a href="https://en.wikipedia.org/wiki/Binomial_distribution" target="_blank" rel="noopener">
-              Wikipedia — Binomial Distribution
-            </a>: definition, moments, and connection to Bernoulli trials.
-          </li>
-          <li>
-            <a href="https://en.wikipedia.org/wiki/Chi-square_test" target="_blank" rel="noopener">
-              Wikipedia — Chi-Square Test
-            </a>: used here as a goodness-of-fit measure for empirical vs theoretical frequencies.
-          </li>
-          <li>
-            <a href="https://en.wikipedia.org/wiki/Central_limit_theorem" target="_blank" rel="noopener">
-              Wikipedia — Central Limit Theorem
-            </a>: explains why Binomial distributions approach the Normal curve for large n.
-          </li>
+        <li><a href="https://en.wikipedia.org/wiki/Random_walk" target="_blank" rel="noopener">Random Walk — Wikipedia</a></li>
+        <li><a href="https://en.wikipedia.org/wiki/Binomial_distribution" target="_blank" rel="noopener">Binomial Distribution — Wikipedia</a></li>
+        <li><a href="https://en.wikipedia.org/wiki/Chi-square_test" target="_blank" rel="noopener">Chi-Square Test — Wikipedia</a></li>
+        <li><a href="https://en.wikipedia.org/wiki/Central_limit_theorem" target="_blank" rel="noopener">Central Limit Theorem — Wikipedia</a></li>
         </ul>
         
-
       <hr />
       <p class="back"><a href="index.html">← Back to all homework</a></p>
     </article>
@@ -432,11 +415,16 @@
     // ===== Wire controls =====
     const $ = id => document.getElementById(id);
     let lastSim = null; 
+    const readNum = (id, fallback) => {
+        const raw = document.getElementById(id).value ?? String(fallback);
+        const x = parseFloat(String(raw).replace(',', '.'));
+        return Number.isFinite(x) ? x : fallback;
+    };
     function run(){
-        const n = clamp(parseInt($('weeks').value||'52',10),1,1000);
-        const m = clamp(parseInt($('attackers').value||'5',10),1,10000);
-        const p = clamp(parseFloat($('p').value||'0.08'),0,1);
-        const T = clamp(parseInt($('trajs').value||'10000',10),1,200000);
+        const n = clamp(parseInt(readNum('weeks', 52),10),1,1000);
+        const m = clamp(parseInt(readNum('attackers', 5),10),1,10000);
+        const p = clamp(readNum('p', 0.08),0,1);
+        const T = clamp(parseInt(readNum('trajs', 10000),10),1,200000);
 
         // genera una NUOVA simulazione solo quando clicchi "Run simulation"
         lastSim = runSim(n,m,p,T);
