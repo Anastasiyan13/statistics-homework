@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HMWK 9 · Probability Interpretations, Measure Theory & Axioms</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=8" />
+</head>
+<body>
+  <div class="bg-gradient" style="pointer-events:none; z-index:-1;"></div>
+
+  <header class="site-header container">
+    <a class="brand" href="index.html">📊 Statistics</a>
+    <nav class="nav">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="hmwk1.html" class="nav-link">HMWK 1</a>
+      <a href="hmwk2.html" class="nav-link">HMWK 2</a>
+      <a href="hmwk3.html" class="nav-link">HMWK 3</a>
+      <a href="hmwk4.html" class="nav-link">HMWK 4</a>
+      <a href="hmwk5.html" class="nav-link">HMWK 5</a>
+      <a href="hmwk6.html" class="nav-link">HMWK 6</a>
+      <a href="hmwk7.html" class="nav-link">HMWK 7</a>
+      <a href="hmwk8.html" class="nav-link">HMWK 8</a>
+      <a href="hmwk9.html" class="nav-link active">HMWK 9</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="post glass">
+      <div class="post-meta">
+        <span class="badge">HMWK 9</span>
+        <span>—</span>
+        <span>Conceptual Essay</span>
+      </div>
+
+      <h1>Probability Interpretations, Measure-Theoretic Foundations & Axiomatic Properties</h1>
+
+      <h2>Goal</h2>
+      <p>
+        In this homework I:
+      </p>
+      <ul>
+        <li>review the main <em>interpretations of probability</em> (classical, frequentist, Bayesian, geometric, axiomatic);</li>
+        <li>explain how the <strong>axiomatic approach</strong> reconciles the apparent conceptual conflicts among them;</li>
+        <li>summarize the link between <strong>probability theory and measure theory</strong> (σ-algebras, measures, random variables);</li>
+        <li>derive, from the axioms alone, the <strong>subadditivity</strong> property and the <strong>inclusion–exclusion principle</strong>.</li>
+      </ul>
+
+      <!-- 1. Interpretations of probability -->
+
+      <h2>1) Main Interpretations of Probability</h2>
+
+      <h3>1.1 Classical Interpretation (Laplace)</h3>
+      <p>
+        Historically, the first systematic interpretation of probability is the <strong>classical</strong> one, attributed to Laplace.
+        If an experiment has a finite number of <em>equally likely</em> outcomes and
+        <code>f</code> outcomes are favorable to event <code>A</code>, the probability is
+        <span class="mono">P(A) = f / N</span>, where <code>N</code> is the total number of outcomes.
+      </p>
+      <p>
+        Examples include ideal dice, coins, and simple card games, under the assumption of symmetry.
+        The main limitation is that it <em>presupposes</em> equiprobability and a finite sample space,
+        which is not always realistic or available (continuous spaces, complex physical systems, &hellip;).
+      </p>
+
+      <h3>1.2 Frequentist Interpretation</h3>
+      <p>
+        The <strong>frequentist</strong> view defines probability as the <em>long-run relative frequency</em> of an event:
+      </p>
+      <p class="mono small">
+        P(A) ≈ K<sub>n</sub>(A) / n, where K<sub>n</sub>(A) is the number of occurrences of A in n independent repetitions.
+      </p>
+      <p>
+        Intuitively, as <code>n</code> grows large, the ratio <code>Kₙ(A)/n</code> converges to a stable value that we call
+        <span class="mono">P(A)</span>. This is formalized by the <em>Law of Large Numbers</em> (see HMWK 4).
+        The frequentist approach is very natural for repeatable experiments, but less so for unique events
+        (elections, singular catastrophes, &hellip;) and it treats probability as a limit concept, which is not directly observable.
+      </p>
+
+      <h3>1.3 Bayesian Interpretation</h3>
+      <p>
+        The <strong>Bayesian</strong> interpretation views probability as a measure of <em>degree of belief</em> (or plausibility)
+        of a proposition, given the available information. Probabilities are thus <em>subjective</em> or
+        <em>epistemic</em>, and they are updated as new evidence arrives via <strong>Bayes’ theorem</strong>:
+      </p>
+      <p class="mono small">
+        P(H | D) = [P(D | H) · P(H)] / P(D)
+      </p>
+      <p>
+        Here <code>H</code> is a hypothesis and <code>D</code> is the data. Bayesian probability applies even to unique events
+        and directly incorporates prior knowledge. The criticism is that priors may appear arbitrary or subjective;
+        however, the framework is internally consistent and extremely powerful in statistical inference.
+      </p>
+
+      <h3>1.4 Geometric Interpretation</h3>
+      <p>
+        The <strong>geometric</strong> (or <em>continuous</em>) interpretation arises when the sample space is a continuum
+        (e.g. points on a segment or in a region).
+        Probabilities are defined via ratios of <strong>lengths</strong>, <strong>areas</strong>, or <strong>volumes</strong>.
+        For example, if a point is chosen uniformly at random in a disk,
+        the probability that it falls in a given sub-region is
+        the area of the sub-region divided by the area of the disk.
+      </p>
+      <p>
+        This interpretation generalizes the classical one from counting finite outcomes to measuring sets,
+        but it relies implicitly on the notion of a <em>measure</em> (e.g. Lebesgue measure on ℝⁿ).
+      </p>
+
+      <h3>1.5 Axiomatic Interpretation</h3>
+      <p>
+        The <strong>axiomatic</strong> approach, due to Kolmogorov (1933), does not attempt to define what probability
+        &ldquo;is&rdquo; philosophically. Instead, it specifies how a probability function must behave.
+        The starting point is a triple:
+      </p>
+      <p class="mono small">
+        (Ω, 𝓕, P)
+      </p>
+      <ul>
+        <li><strong>Ω</strong> — sample space (all possible outcomes);</li>
+        <li><strong>𝓕</strong> — σ-algebra of events (measurable subsets of Ω);</li>
+        <li><strong>P</strong> — function 𝓕 → [0,1] satisfying the axioms.</li>
+      </ul>
+      <p>
+        The axioms are:
+      </p>
+      <ol>
+        <li><strong>Non-negativity:</strong> for all <code>A ∈ 𝓕</code>, <span class="mono">P(A) ≥ 0</span>.</li>
+        <li><strong>Normalization:</strong> <span class="mono">P(Ω) = 1</span>.</li>
+        <li><strong>Countable additivity:</strong> if <code>(Aᵢ)</code> is a sequence of pairwise disjoint events, then
+          <span class="mono">P(⋃ Aᵢ) = ∑ P(Aᵢ)</span>.
+        </li>
+      </ol>
+      <p>
+        Classical, frequentist, Bayesian, and geometric probabilities can all be seen as
+        <em>models</em> that produce a specific triple <span class="mono">(Ω, 𝓕, P)</span>
+        satisfying these axioms. This is the basis for the reconciliation discussed next.
+      </p>
+
+      <!-- 2. How axioms resolve inconsistencies -->
+
+      <h2>2) How the Axiomatic Approach Reconciles Interpretations</h2>
+
+      <h3>2.1 Unifying Different Notions of Probability</h3>
+      <p>
+        At a philosophical level, the classical, frequentist, and Bayesian interpretations may disagree on what
+        <span class="mono">P(A)</span> <em>means</em> (symmetry, long-run frequency, degree of belief, &hellip;).
+        However, at a mathematical level, they all propose numerical values in <span class="mono">[0,1]</span> for events
+        (subsets of Ω) and these values should obey some intuitive rules (e.g., probability of the union of disjoint
+        events is the sum).
+      </p>
+      <p>
+        Kolmogorov’s axioms abstract away the philosophical debate and require only that the assigned probabilities
+        obey a consistent algebra on events. A classical model on a finite Ω, a frequentist limit model on an infinite
+        sequence of trials, a Bayesian posterior model given data, and a geometric model on a continuous space all
+        fit as long as they respect non-negativity, normalization, and countable additivity.
+      </p>
+
+      <h3>2.2 Classical vs Frequentist vs Bayesian</h3>
+      <ul>
+        <li>
+          A <strong>classical</strong> model can be seen as choosing Ω finite with the counting measure and then defining
+          <span class="mono">P(A) = |A| / |Ω|</span>. This clearly satisfies the axioms.
+        </li>
+        <li>
+          A <strong>frequentist</strong> model interprets <span class="mono">P(A)</span> as the limit of frequencies in
+          an infinite sequence of i.i.d. trials; the limit (if it exists) automatically obeys the axioms thanks to
+          the LLN and the underlying construction of product measures.
+        </li>
+        <li>
+          A <strong>Bayesian</strong> model takes Ω to be a parameter space or outcome space, and
+          <span class="mono">P</span> represents a prior or posterior measure on Ω.
+          Bayes’ theorem is just the Radon–Nikodym derivative (change-of-measure formula) in this setting.
+        </li>
+      </ul>
+      <p>
+        From the axiomatic perspective, all three are simply different ways of <em>constructing</em> a probability
+        measure; the derived theorems and properties are the same.
+      </p>
+
+      <h3>2.3 Geometric and Continuous Models</h3>
+      <p>
+        The geometric interpretation is formalized by letting Ω be a subset of ℝⁿ, 𝓕 the σ-algebra of measurable sets,
+        and P a probability measure absolutely continuous with respect to Lebesgue measure (e.g., uniform on a segment,
+        normal distribution on ℝ).
+        The axioms ensure that probabilities behave nicely under limits, countable unions, and intersections,
+        avoiding paradoxes from naive area/volume arguments.
+      </p>
+
+      <h3>2.4 Resolving Conceptual Tensions</h3>
+      <p>
+        The axiomatic framework does <em>not</em> choose one interpretation as &ldquo;true&rdquo;; instead it:
+      </p>
+      <ul>
+        <li>provides a <strong>common language</strong> (events, measures, random variables);</li>
+        <li>separates the <em>construction</em> of probability models from their <em>mathematical properties</em>;</li>
+        <li>shows that, as long as the axioms hold, all interpretations share the same logical consequences
+          (LLN, CLT, Bayes theorem, inclusion–exclusion, &hellip;).</li>
+      </ul>
+
+      <!-- 3. Probability & measure theory -->
+
+      <h2>3) Probability Theory as a Special Case of Measure Theory</h2>
+
+      <h3>3.1 σ-Algebras of Events</h3>
+      <p>
+        In measure theory, we start from a set Ω and a collection 𝓕 of subsets satisfying:
+      </p>
+      <ul>
+        <li>Ω ∈ 𝓕 and ∅ ∈ 𝓕;</li>
+        <li>if A ∈ 𝓕 then its complement A<sup>c</sup> is in 𝓕;</li>
+        <li>if A₁, A₂, &hellip; ∈ 𝓕 then ⋃ Aᵢ ∈ 𝓕 (and therefore also ⋂ Aᵢ ∈ 𝓕).</li>
+      </ul>
+      <p>
+        Such a collection 𝓕 is called a <strong>σ-algebra</strong>. In probability,
+        each A ∈ 𝓕 is an <strong>event</strong> whose probability P(A) is defined.
+      </p>
+
+      <h3>3.2 Probability Measures</h3>
+      <p>
+        A <strong>measure</strong> μ on (Ω, 𝓕) is a function μ: 𝓕 → [0, ∞] satisfying:
+      </p>
+      <ul>
+        <li>μ(∅) = 0;</li>
+        <li>for disjoint Aᵢ, μ(⋃ Aᵢ) = ∑ μ(Aᵢ).</li>
+      </ul>
+      <p>
+        A <strong>probability measure</strong> is just a measure with total mass 1, i.e. μ(Ω) = 1.
+        Therefore, probability theory is a special case of measure theory where we restrict to measures
+        with total mass one and interpret them as probabilities.
+      </p>
+
+      <h3>3.3 Measurable Functions and Random Variables</h3>
+      <p>
+        In measure theory, a function X: Ω → ℝ is <strong>measurable</strong> if
+        for every Borel set B ⊆ ℝ, the preimage
+        <span class="mono">X⁻¹(B) = { ω ∈ Ω : X(ω) ∈ B }</span> belongs to 𝓕.
+      </p>
+      <p>
+        In probability, a <strong>random variable</strong> is precisely such a measurable function.
+        The distribution of X is the pushforward measure:
+      </p>
+      <p class="mono small">
+        P<sub>X</sub>(B) = P( X ∈ B ) = P( X⁻¹(B) )
+      </p>
+      <p>
+        This definition works uniformly for discrete, continuous, and mixed distributions, and for vector-valued
+        random variables. Expectations and variances are defined as measure-theoretic integrals
+        (e.g., <span class="mono">E[X] = ∫ X dP</span>), providing a unified and rigorous framework.
+      </p>
+
+      <h3>3.4 Why Measure Theory Matters</h3>
+      <p>
+        Measure theory guarantees:
+      </p>
+      <ul>
+        <li>consistent handling of <strong>infinite</strong> sample spaces and limits of random variables;</li>
+        <li>a clean formulation of convergence notions (almost sure, in probability, in L², &hellip;);</li>
+        <li>strong theorems such as LLN and CLT under general conditions;</li>
+        <li>a common language for probability, integration, and functional analysis.</li>
+      </ul>
+      <p>
+        In summary, probability theory is measure theory with an interpretative layer: measures represent
+        probabilities and measurable functions represent random quantities.
+      </p>
+
+      <!-- 4. Subadditivity -->
+
+      <h2>4) Subadditivity from the Axioms</h2>
+      <p>
+        A useful consequence of the axioms is the <strong>subadditivity</strong> property:
+      </p>
+      <p class="mono small">
+        P(A ∪ B) ≤ P(A) + P(B)
+      </p>
+      <p>
+        for any events A and B in 𝓕. I derive it step by step from the axioms.
+      </p>
+
+      <h3>4.1 Decomposition of the Union</h3>
+      <p>
+        We can decompose A ∪ B into disjoint parts:
+      </p>
+      <ul>
+        <li>A ∩ B<sup>c</sup> (only A occurs);</li>
+        <li>B (all outcomes where B occurs).</li>
+      </ul>
+      <p>
+        Indeed:
+      </p>
+      <p class="mono small">
+        A ∪ B = (A ∩ B<sup>c</sup>) ∪ B,
+      </p>
+      <p>
+        and the two sets on the right-hand side are disjoint. By countable additivity (applied to two sets),
+        we obtain:
+      </p>
+      <p class="mono small">
+        P(A ∪ B) = P(A ∩ B<sup>c</sup>) + P(B).
+      </p>
+
+      <h3>4.2 Bounding by P(A) + P(B)</h3>
+      <p>
+        Notice that A can be written as:
+      </p>
+      <p class="mono small">
+        A = (A ∩ B<sup>c</sup>) ∪ (A ∩ B),
+      </p>
+      <p>
+        which is a union of disjoint sets. Thus:
+      </p>
+      <p class="mono small">
+        P(A) = P(A ∩ B<sup>c</sup>) + P(A ∩ B) ≥ P(A ∩ B<sup>c</sup>),
+      </p>
+      <p>
+        because P(A ∩ B) ≥ 0 by non-negativity.
+        Combining this inequality with the previous identity:
+      </p>
+      <p class="mono small">
+        P(A ∪ B) = P(A ∩ B<sup>c</sup>) + P(B) ≤ P(A) + P(B).
+      </p>
+      <p>
+        This proves subadditivity for two events. The general subadditivity for countable unions follows
+        by a more advanced argument using disjointification and countable additivity.
+      </p>
+
+      <!-- 5. Inclusion–Exclusion -->
+
+      <h2>5) Inclusion–Exclusion Principle from the Axioms</h2>
+
+      <h3>5.1 Formula for Two Events</h3>
+      <p>
+        For two events A and B, the <strong>inclusion–exclusion formula</strong> is:
+      </p>
+      <p class="mono small">
+        P(A ∪ B) = P(A) + P(B) − P(A ∩ B).
+      </p>
+      <p>
+        This can also be derived directly from the axioms.
+      </p>
+
+      <h3>5.2 Derivation</h3>
+      <p>
+        Start again from the decomposition:
+      </p>
+      <p class="mono small">
+        A = (A ∩ B<sup>c</sup>) ∪ (A ∩ B), &nbsp; with disjoint union.
+      </p>
+      <p>
+        Hence:
+      </p>
+      <p class="mono small">
+        P(A) = P(A ∩ B<sup>c</sup>) + P(A ∩ B).
+      </p>
+      <p>
+        From Section 4 we also have:
+      </p>
+      <p class="mono small">
+        P(A ∪ B) = P(A ∩ B<sup>c</sup>) + P(B).
+      </p>
+      <p>
+        Solve the first equation for <span class="mono">P(A ∩ B<sup>c</sup>)</span>:
+      </p>
+      <p class="mono small">
+        P(A ∩ B<sup>c</sup>) = P(A) − P(A ∩ B).
+      </p>
+      <p>
+        Substitute into the second:
+      </p>
+      <p class="mono small">
+        P(A ∪ B) = [P(A) − P(A ∩ B)] + P(B) = P(A) + P(B) − P(A ∩ B).
+      </p>
+      <p>
+        This is exactly the inclusion–exclusion principle for two events, obtained by
+        combining only:
+      </p>
+      <ul>
+        <li>set identities (decompositions of A and A ∪ B);</li>
+        <li>countable additivity on disjoint unions;</li>
+        <li>non-negativity (implicitly to justify some inequalities).</li>
+      </ul>
+
+      <h3>5.3 Intuitive Interpretation</h3>
+      <p>
+        The formula says: if we simply add P(A) and P(B), we double-count outcomes where both A and B happen
+        (the intersection). To correct this, we subtract P(A ∩ B). This matches the Venn diagram intuition and shows
+        how the axioms formalize a very natural counting logic.
+      </p>
+
+      <!-- Conclusion -->
+
+      <h2>6) Takeaways</h2>
+      <ul>
+        <li>
+          Different interpretations of probability (classical, frequentist, Bayesian, geometric) disagree on
+          the <em>meaning</em> of P(A), but all can be realized as models of an axiomatic probability space.
+        </li>
+        <li>
+          The axiomatic approach (Kolmogorov) provides a unified and consistent framework based on a triple
+          <span class="mono">(Ω, 𝓕, P)</span>, with events as elements of a σ-algebra and P as a probability measure.
+        </li>
+        <li>
+          Measure theory underlies modern probability: a probability measure is just a normalized measure, and
+          random variables are measurable functions whose distributions and expectations are defined via integrals.
+        </li>
+        <li>
+          Important properties like <strong>subadditivity</strong> and <strong>inclusion–exclusion</strong> are
+          not extra assumptions but direct consequences of the basic axioms plus simple set-theoretic identities.
+        </li>
+      </ul>
+
+      <h2>References</h2>
+        <ul>
+        <li>
+            <a href="https://en.wikipedia.org/wiki/Probability_interpretations" target="_blank" rel="noopener">
+            Wikipedia — Interpretations of Probability
+            </a>
+        </li>
+
+        <li>
+            <a href="https://en.wikipedia.org/wiki/Classical_definition_of_probability" target="_blank" rel="noopener">
+            Wikipedia — Classical Definition of Probability (Laplace)
+            </a>
+        </li>
+
+        <li>
+            <a href="https://en.wikipedia.org/wiki/Frequentist_probability" target="_blank" rel="noopener">
+            Wikipedia — Frequentist Probability
+            </a>
+        </li>
+
+        <li>
+            <a href="https://en.wikipedia.org/wiki/Bayesian_probability" target="_blank" rel="noopener">
+            Wikipedia — Bayesian Probability
+            </a>
+        </li>
+
+        <li>
+            <a href="https://en.wikipedia.org/wiki/Geometric_probability" target="_blank" rel="noopener">
+            Wikipedia — Geometric Probability
+            </a>
+        </li>
+
+        <li>
+            <a href="https://plato.stanford.edu/entries/probability-interpret/" target="_blank" rel="noopener">
+            Stanford Encyclopedia of Philosophy — Interpretations of Probability
+            </a>
+        </li>
+
+        <li>
+            <a href="https://en.wikipedia.org/wiki/Probability_axioms" target="_blank" rel="noopener">
+            Wikipedia — Kolmogorov Probability Axioms
+            </a>
+        </li>
+
+        <li>
+            <a href="https://en.wikipedia.org/wiki/Sigma-algebra" target="_blank" rel="noopener">
+            Wikipedia — σ-algebra
+            </a>
+        </li>
+
+        <li>
+            <a href="https://en.wikipedia.org/wiki/Measure_(mathematics)" target="_blank" rel="noopener">
+            Wikipedia — Measure Theory
+            </a>
+        </li>
+
+        <li>
+            <a href="https://en.wikipedia.org/wiki/Measure_theory" target="_blank" rel="noopener">
+            Wikipedia — Measure Theory (General)
+            </a>
+        </li>
+
+        <li>
+            <a href="https://en.wikipedia.org/wiki/Random_variable" target="_blank" rel="noopener">
+            Wikipedia — Random Variable (Measurable Function)
+            </a>
+        </li>
+
+        <li>
+            <a href="https://en.wikipedia.org/wiki/Inclusion%E2%80%93exclusion_principle" target="_blank" rel="noopener">
+            Wikipedia — Inclusion–Exclusion Principle
+            </a>
+        </li>
+
+        <li>
+            <a href="https://en.wikipedia.org/wiki/Measure_(mathematics)#Subadditivity" target="_blank" rel="noopener">
+            Wikipedia — Subadditivity of Measures
+            </a>
+        </li>
+
+        <li>
+            <a href="https://math.mit.edu/~dav/Probability%20and%20Measure.pdf" target="_blank" rel="noopener">
+            MIT — Probability & Measure (Lecture Notes)
+            </a>
+        </li>
+
+        <li>
+            <a href="https://stats.libretexts.org/" target="_blank" rel="noopener">
+            LibreTexts Statistics — Probability & Measures
+            </a>
+        </li>
+
+        <li>
+            <a href="https://www.stat.berkeley.edu/~stark/Java/Html/axioms.htm" target="_blank" rel="noopener">
+            UC Berkeley — Axioms of Probability (Stark)
+            </a>
+        </li>
+        </ul>
+
+
+      <hr />
+      <p class="back"><a href="index.html">← Back to all homework</a></p>
+    </article>
+  </main>
+
+  <footer class="site-footer container">
+    <p>© <span id="y"></span> Statistics Homework · <strong>Anastasiia Baranovska</strong></p>
+  </footer>
+  <script>document.getElementById('y').textContent = new Date().getFullYear();</script>
+</body>
+</html>
