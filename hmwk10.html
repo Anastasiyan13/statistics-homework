@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HMWK 10 · Poisson Counting Process & Simulation</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=8" />
+</head>
+
+<body>
+  <div class="bg-gradient" style="pointer-events:none; z-index:-1;"></div>
+
+  <header class="site-header container">
+    <a class="brand" href="index.html">📊 Statistics</a>
+    <nav class="nav">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="hmwk1.html" class="nav-link">HMWK 1</a>
+      <a href="hmwk2.html" class="nav-link">HMWK 2</a>
+      <a href="hmwk3.html" class="nav-link">HMWK 3</a>
+      <a href="hmwk4.html" class="nav-link">HMWK 4</a>
+      <a href="hmwk5.html" class="nav-link">HMWK 5</a>
+      <a href="hmwk6.html" class="nav-link">HMWK 6</a>
+      <a href="hmwk7.html" class="nav-link">HMWK 7</a>
+      <a href="hmwk8.html" class="nav-link">HMWK 8</a>
+      <a href="hmwk9.html" class="nav-link">HMWK 9</a>
+      <a href="hmwk10.html" class="nav-link active">HMWK 10</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="post glass">
+
+      <div class="post-meta">
+        <span class="badge">HMWK 10</span>
+        <span>—</span>
+        <span>Counting Processes & Poisson Simulation</span>
+      </div>
+
+      <h1>Probability Foundations & Poisson Counting Processes</h1>
+
+      <h2>Goal</h2>
+      <p>
+        In this homework I first recall the main <em>interpretations of probability</em> and their
+        measure-theoretic foundations, and I derive some basic consequences of the axioms
+        (subadditivity and inclusion–exclusion).
+        Then I construct and simulate a <strong>counting process</strong> over a time interval
+        using a fine Bernoulli approximation, and I show how this leads to the
+        <strong>Poisson process</strong> with rate λ.
+      </p>
+
+      <!-- 1. Interpretations & axioms -->
+
+      <h2>1) Interpretations of Probability & Axiomatic Resolution</h2>
+
+      <h3>1.1 Classical, Frequentist, Bayesian, Geometric</h3>
+      <ul>
+        <li>
+          <strong>Classical.</strong> For finitely many <em>equally likely</em> outcomes,
+          <span class="mono">P(A) = |A| / |Ω|</span>. Works well for ideal dice/coins but assumes
+          symmetry and finite Ω.
+        </li>
+        <li>
+          <strong>Frequentist.</strong> Probability is the <em>long-run relative frequency</em>
+          of an event in repeated i.i.d. trials:
+          <span class="mono">P(A) ≈ Kₙ(A)/n</span>. Natural for repeatable experiments, less direct
+          for unique events.
+        </li>
+        <li>
+          <strong>Bayesian.</strong> Probability quantifies a <em>degree of belief</em> in a
+          proposition given information. Priors are updated with data via Bayes’ theorem
+          <span class="mono">P(H|D) = P(D|H)P(H)/P(D)</span>.
+        </li>
+        <li>
+          <strong>Geometric.</strong> On a continuum (segments, regions in ℝⁿ), probabilities are
+          ratios of lengths/areas/volumes, implicitly using a measure (e.g. Lebesgue).
+        </li>
+      </ul>
+
+      <h3>1.2 Axiomatic Interpretation (Kolmogorov)</h3>
+      <p>
+        Kolmogorov’s axioms do not choose a philosophical meaning for <span class="mono">P(A)</span>;
+        they only require that probabilities obey a consistent algebra on events. The starting
+        point is a triple:
+      </p>
+      <p class="mono small">
+        (Ω, 𝓕, P)
+      </p>
+      <ul>
+        <li><strong>Ω</strong> — sample space (all possible outcomes);</li>
+        <li><strong>𝓕</strong> — σ-algebra of events (measurable subsets of Ω);</li>
+        <li><strong>P</strong> — function 𝓕 → [0,1] satisfying the axioms.</li>
+      </ul>
+      <p>
+        The axioms are:
+      </p>
+      <ol>
+        <li>
+          <strong>Non-negativity:</strong> for all <span class="mono">A ∈ 𝓕</span>,
+          <span class="mono">P(A) ≥ 0</span>.
+        </li>
+        <li>
+          <strong>Normalization:</strong> <span class="mono">P(Ω) = 1</span>.
+        </li>
+        <li>
+          <strong>Countable additivity:</strong> if <span class="mono">(Aᵢ)</span> is a sequence
+          of pairwise disjoint events, then
+          <span class="mono">P(⋃ Aᵢ) = ∑ P(Aᵢ)</span>.
+        </li>
+      </ol>
+      <p>
+        Classical, frequentist, Bayesian and geometric constructions are all valid as long as they
+        produce some <span class="mono">(Ω, 𝓕, P)</span> satisfying these axioms.
+        In this way the axiomatic approach reconciles different interpretations at the
+        mathematical level: they become <em>different models</em> of the same abstract theory.
+      </p>
+
+      <!-- 2. Probability & measure theory -->
+
+      <h2>2) Probability as Measure Theory</h2>
+
+      <h3>2.1 σ-Algebras and Probability Measures</h3>
+      <p>
+        In measure theory, a <strong>σ-algebra</strong> 𝓕 on Ω is a collection of subsets
+        closed under complements and countable unions:
+      </p>
+      <ul>
+        <li>Ω ∈ 𝓕 and ∅ ∈ 𝓕;</li>
+        <li>if A ∈ 𝓕 then A<sup>c</sup> ∈ 𝓕;</li>
+        <li>if A₁, A₂, … ∈ 𝓕 then ⋃ Aᵢ ∈ 𝓕 (and thus ⋂ Aᵢ ∈ 𝓕).</li>
+      </ul>
+      <p>
+        A <strong>measure</strong> μ on (Ω, 𝓕) is a function μ: 𝓕 → [0, ∞] such that
+        μ(∅) = 0 and for disjoint Aᵢ,
+        <span class="mono">μ(⋃ Aᵢ) = ∑ μ(Aᵢ)</span>.
+        A <strong>probability measure</strong> is simply a measure with total mass 1:
+        <span class="mono">μ(Ω) = 1</span>. In probability we usually write μ = P.
+      </p>
+
+      <h3>2.2 Measurable Functions & Random Variables</h3>
+      <p>
+        A function X: Ω → ℝ is called <strong>measurable</strong> if for every Borel set B ⊆ ℝ,
+        the preimage <span class="mono">X⁻¹(B) = { ω ∈ Ω : X(ω) ∈ B }</span> belongs to 𝓕.
+        In probability, such measurable functions are precisely our
+        <strong>random variables</strong>.
+      </p>
+      <p>
+        The <strong>distribution</strong> of X is the pushforward measure:
+      </p>
+      <p class="mono small">
+        P<sub>X</sub>(B) = P(X ∈ B) = P(X⁻¹(B)).
+      </p>
+      <p>
+        Expectations and variances are defined as integrals relative to P; for example
+        <span class="mono">E[X] = ∫ X dP</span>.
+        This framework works for discrete, continuous and mixed distributions in a unified way.
+      </p>
+
+      <!-- 3. Subadditivity & inclusion–exclusion -->
+
+      <h2>3) Consequences of the Axioms: Subadditivity & Inclusion–Exclusion</h2>
+
+      <h3>3.1 Subadditivity</h3>
+      <p>
+        For any events A, B ∈ 𝓕 we have
+      </p>
+      <p class="mono small">
+        P(A ∪ B) ≤ P(A) + P(B).
+      </p>
+      <p>
+        Proof sketch. Decompose:
+        <span class="mono">A ∪ B = (A ∩ B<sup>c</sup>) ∪ B</span> (disjoint union), so
+        <span class="mono">P(A ∪ B) = P(A ∩ B<sup>c</sup>) + P(B)</span>.
+        On the other hand
+        <span class="mono">A = (A ∩ B<sup>c</sup>) ∪ (A ∩ B)</span>, so
+        <span class="mono">P(A) = P(A ∩ B<sup>c</sup>) + P(A ∩ B) ≥ P(A ∩ B<sup>c</sup>)</span>
+        because probabilities are non-negative.
+        Combining the two identities gives
+        <span class="mono">P(A ∪ B) ≤ P(A) + P(B)</span>.
+      </p>
+
+      <h3>3.2 Inclusion–Exclusion (Two Events)</h3>
+      <p>
+        For two events we can refine the previous argument and obtain:
+      </p>
+      <p class="mono small">
+        P(A ∪ B) = P(A) + P(B) − P(A ∩ B).
+      </p>
+      <p>
+        Indeed, from <span class="mono">P(A) = P(A ∩ B<sup>c</sup>) + P(A ∩ B)</span> we get
+        <span class="mono">P(A ∩ B<sup>c</sup>) = P(A) − P(A ∩ B)</span>.
+        Substituting into
+        <span class="mono">P(A ∪ B) = P(A ∩ B<sup>c</sup>) + P(B)</span> yields the formula.
+        Intuitively, when we add P(A) + P(B) we have counted
+        P(A ∩ B) twice and we need to subtract it once.
+      </p>
+
+      <!-- 4. Counting processes & Poisson -->
+
+      <h2>4) Counting Processes & the Poisson Idea</h2>
+      <p>
+        A <strong>counting process</strong> <span class="mono">{N(t), t ≥ 0}</span> is a stochastic process
+        that records how many events have occurred up to time t. Formally:
+      </p>
+      <ul>
+        <li><span class="mono">N(0) = 0</span> and <span class="mono">N(t) ∈ {0,1,2,…}</span>;</li>
+        <li>N(t) is non-decreasing and has jumps of size 1 (each event increases the count by one);</li>
+        <li>sample paths are right-continuous with left limits (cadlag);</li>
+        <li>for s &lt; t, the increment <span class="mono">N(t) − N(s)</span> counts events in (s, t].</li>
+      </ul>
+      <p>
+        The most important example is the <strong>Poisson process</strong> with rate λ &gt; 0, denoted
+        <span class="mono">{N(t)}</span>, characterized by:
+      </p>
+      <ul>
+        <li><strong>Independent increments:</strong> counts in disjoint time intervals are independent;</li>
+        <li><strong>Stationary increments:</strong> for t ≥ 0, h &gt; 0,
+          <span class="mono">N(t+h) − N(t) ∼ Poisson(λh)</span>;</li>
+        <li><strong>Right-continuous step paths:</strong> N(t) jumps by +1 whenever an event occurs.</li>
+      </ul>
+      <p>
+        Intuitively, λ is the <em>average rate</em> of events per unit time: on average there are λ events
+        in each interval of length 1, and λT events in an interval of length T.
+      </p>
+
+      <!-- 5. Bernoulli approximation -->
+
+      <h2>5) Bernoulli Approximation on a Fine Time Grid</h2>
+      <p>
+        In this homework I construct a discrete approximation of a Poisson counting process on
+        a fixed time interval <span class="mono">[0, T]</span> (e.g. T = 1). The idea is:
+      </p>
+      <ol>
+        <li>Divide [0, T] into <span class="mono">n</span> subintervals of equal length
+          <span class="mono">Δt = T/n</span>.</li>
+        <li>
+          In each small subinterval, generate an event independently with probability
+          <span class="mono">p = λΔt = λT/n</span>.
+        </li>
+        <li>
+          Let <span class="mono">Xᵢ</span> be the indicator of an event in subinterval i
+          (<span class="mono">Xᵢ = 1</span> if an event occurs, 0 otherwise). Define the counting process
+          on the grid:
+          <span class="mono">Nₙ(kΔt) = ∑<sub>i=1..k</sub> Xᵢ</span>.
+        </li>
+      </ol>
+      <p>
+        For fixed T, the total number of events by time T is
+        <span class="mono">Nₙ(T) = ∑<sub>i=1..n</sub> Xᵢ</span>, which has a
+        <strong>Binomial</strong>(n, λT/n) distribution. As n → ∞,
+        this converges in distribution to a Poisson(λT) random variable.
+      </p>
+      <p class="muted small">
+        In other words, a Poisson process can be seen as the limit of
+        Bernoulli &ldquo;coin flips&rdquo; on finer and finer time grids, with event probability
+        proportional to the interval length.
+      </p>
+
+      <h3>5.1 Properties in the Limit</h3>
+      <p>
+        When Δt is very small:
+      </p>
+      <ul>
+        <li>The chance of more than one event in a single subinterval is negligible;</li>
+        <li>Events in disjoint subintervals are independent (by construction);</li>
+        <li>The expected number of events in [0, T] is approximately λT.</li>
+      </ul>
+      <p>
+        Taking the limit n → ∞ yields the continuous-time Poisson process with rate λ:
+        increments in any interval of length h are Poisson(λh), and increments over
+        disjoint intervals are independent.
+      </p>
+
+      <!-- 6. Interpretation of λ -->
+
+      <h2>6) Interpretation of the Rate λ</h2>
+      <p>
+        The parameter λ plays several roles simultaneously:
+      </p>
+      <ul>
+        <li>
+          <strong>Average count per unit time:</strong>
+          <span class="mono">E[N(1)] = λ</span> and <span class="mono">E[N(T)] = λT</span>.
+        </li>
+        <li>
+          <strong>Intensity of events:</strong> larger λ means more frequent jumps of the counting
+          process and steeper expected growth of N(t).
+        </li>
+        <li>
+          <strong>Waiting times:</strong> the inter-arrival times between events are
+          Exponential(λ); the expected waiting time is <span class="mono">1/λ</span>.
+        </li>
+        <li>
+          <strong>Limit parameter:</strong> in the Bernoulli approximation, λ appears in
+          <span class="mono">p = λΔt</span> and in the limiting Poisson(λT) distribution.
+        </li>
+      </ul>
+      <p>
+        In the simulation that follows, varying λ will change how often the counting process
+        jumps over [0, T]: small λ produces rare, isolated events; large λ produces frequent,
+        closely spaced jumps.
+      </p>
+
+      <!-- 7. Interactive Simulation placeholder -->
+
+      <h2>7) Interactive Simulation (JS)</h2>
+      <p>
+        Below I implement a simple JavaScript simulator for the Bernoulli approximation of a
+        Poisson counting process. The user can choose the time horizon T, the rate λ, the number
+        of subintervals n, and the number of repeated simulations. The tool visualizes:
+      </p>
+      <ul>
+        <li>
+          a <strong>sample path</strong> of the counting process N(t) over time (step function);
+        </li>
+        <li>
+          the empirical distribution of N(T) across many runs, compared with the theoretical
+          Poisson(λT) probabilities.
+        </li>
+      </ul>
+      <p class="muted small">
+        Below are the input controls, canvas elements, and JavaScript code that generate
+        and display the simulations.
+      </p>      
+
+      <section class="tool glass" style="padding:12px;border-radius:14px;margin-top:8px;">
+        <h3>7.1 Simulation Controls</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;">
+          <div>
+            <label class="subtle">T (time horizon)</label><br>
+            <input id="cp-T" type="number" step="0.1" min="0.1" value="1"
+                   style="width:120px;padding:6px;border-radius:8px;">
+          </div>
+          <div>
+            <label class="subtle">λ (rate)</label><br>
+            <input id="cp-lambda" type="number" step="0.1" min="0.1" value="3"
+                   style="width:120px;padding:6px;border-radius:8px;">
+          </div>
+          <div>
+            <label class="subtle">n (subintervals)</label><br>
+            <input id="cp-n" type="number" step="100" min="100" value="5000"
+                   style="width:150px;padding:6px;border-radius:8px;">
+          </div>
+          <div>
+            <label class="subtle">Runs (paths)</label><br>
+            <input id="cp-runs" type="number" step="10" min="1" value="1000"
+                   style="width:140px;padding:6px;border-radius:8px;">
+          </div>
+          <button id="cp-run" class="btn">Run simulation</button>
+          <span id="cp-hint" class="pill mono" style="margin-left:4px;">—</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+                    gap:10px;margin-top:12px;">
+          <div class="glass" style="padding:8px;border-radius:10px;">
+            <h4>Theoretical (Poisson)</h4>
+            <div class="mono small">
+              λT = <span id="cp-theory-lT">—</span><br>
+              E[N(T)] = <span id="cp-theory-mean">—</span><br>
+              Var[N(T)] = <span id="cp-theory-var">—</span>
+            </div>
+          </div>
+          <div class="glass" style="padding:8px;border-radius:10px;">
+            <h4>Empirical from simulation</h4>
+            <div class="mono small">
+              mean = <span id="cp-emp-mean">—</span><br>
+              variance = <span id="cp-emp-var">—</span><br>
+              runs = <span id="cp-emp-runs">—</span>
+            </div>
+            <p class="muted small">
+              N(T) counts how many events occurred in [0, T] for each simulated path.
+            </p>
+          </div>
+        </div>
+
+        <h3 style="margin-top:14px;">Sample path N(t) over [0, T]</h3>
+        <div style="border:1px solid var(--border,#e5e7eb);border-radius:12px;
+                    padding:6px;background:#fafafa;">
+          <canvas id="cp-path" style="width:100%;height:230px;display:block;"></canvas>
+          <p class="muted small" style="margin-top:4px;">
+            Step function: each upward jump corresponds to an event.
+          </p>
+        </div>
+
+        <h3 style="margin-top:14px;">Distribution of N(T)</h3>
+        <div style="border:1px solid var(--border,#e5e7eb);border-radius:12px;
+                    padding:6px;background:#fafafa;">
+          <canvas id="cp-hist" style="width:100%;height:230px;display:block;"></canvas>
+          <p class="muted small" style="margin-top:4px;">
+            Bars show empirical frequencies; outline dots show the theoretical Poisson(λT)
+            probabilities scaled by the number of runs.
+          </p>
+        </div>
+
+        <h2>8) Experiments & Numerical Tests</h2>
+        <p>
+        To study how the parameters <span class="mono">λ</span>, <span class="mono">T</span> and
+        <span class="mono">n</span> affect the simulated counting process, I performed six controlled
+        experiments using the interactive simulator. For each experiment, I compared the simulated
+        sample path, the empirical distribution of <span class="mono">N(T)</span>, and the theoretical
+        Poisson distribution with parameter <span class="mono">λT</span>.
+        </p>
+
+        <!-- ===================== TEST A ===================== -->
+
+        <h3>Test A — Effect of the rate λ (with T = 1)</h3>
+        <p>
+        In this test I fixed the time horizon to <span class="mono">T = 1</span>,
+        the grid resolution to <span class="mono">n = 5000</span>, and the number of runs to
+        <span class="mono">1000</span>. I then compared two different values of the rate
+        <span class="mono">λ</span>.
+        </p>
+
+        <h4>A1 — λ = 1 (few expected events)</h4>
+        <p>
+        With λ = 1, the theoretical distribution is Poisson(1). The sample path shows very few
+        jumps (typically 0–1 events), and the histogram of <span class="mono">N(1)</span> is
+        concentrated around small values. The empirical mean (≈1.05) and variance (≈1.02)
+        closely match the theoretical values.
+        </p>
+
+        <figure>
+        <img src="images/hmwk10_testA_lambda1.png" alt="Test A1 — λ = 1" class="screenshot">
+        <figcaption>Figure A1 — Sample path and distribution for λ = 1.</figcaption>
+        </figure>
+
+        <h4>A2 — λ = 5 (many expected events)</h4>
+        <p>
+        Increasing the rate to λ = 5 greatly increases the number of events. The theoretical
+        distribution is now Poisson(5). The sample path contains several jumps, and the histogram
+        shifts to the right accordingly. The empirical mean (≈4.96) and variance (≈4.64)
+        again match the theory well.
+        </p>
+
+        <figure>
+        <img src="images/hmwk10_testA_lambda5.png" alt="Test A2 — λ = 5" class="screenshot">
+        <figcaption>Figure A2 — Sample path and distribution for λ = 5.</figcaption>
+        </figure>
+
+        <p>
+        These results confirm that the parameter <span class="mono">λ</span> controls the average
+        frequency of events in the counting process. Higher λ produces more jumps in N(t) and
+        shifts the distribution of <span class="mono">N(1)</span> to the right.
+        </p>
+
+        <!-- ===================== TEST B ===================== -->
+
+        <h3>Test B — Effect of the time horizon T (with λ = 2)</h3>
+        <p>
+        For this test I fixed the rate to <span class="mono">λ = 2</span> and varied the time horizon.
+        This highlights how the key theoretical parameter is the product <span class="mono">λT</span>.
+        </p>
+
+        <h4>B1 — T = 0.5 (short interval)</h4>
+        <p>
+        Here <span class="mono">λT = 1</span>. There is little time for events to occur, and most sample
+        paths contain 0 or 1 jump. The histogram mirrors a Poisson(1) distribution, and the empirical
+        mean (≈1.04) and variance (≈0.99) agree with theory.
+        </p>
+
+        <figure>
+        <img src="images/hmwk10_testB_T05.png" alt="Test B1 — T = 0.5" class="screenshot">
+        <figcaption>Figure B1 — Short time horizon (T = 0.5).</figcaption>
+        </figure>
+
+        <h4>B2 — T = 3 (longer interval)</h4>
+        <p>
+        Now <span class="mono">λT = 6</span>. The sample path has many more jumps, and the histogram
+        is centered around 6. The empirical mean (≈6.02) and variance (≈6.50) are close to the
+        theoretical Poisson(6) predictions.
+        </p>
+
+        <figure>
+        <img src="images/hmwk10_testB_T3.png" alt="Test B2 — T = 3" class="screenshot">
+        <figcaption>Figure B2 — Longer time horizon (T = 3).</figcaption>
+        </figure>
+
+        <p>
+        This confirms that <span class="mono">N(T)</span> depends primarily on the product
+        <span class="mono">λT</span>: doubling the time horizon has the same effect as doubling the
+        event rate.
+        </p>
+
+        <!-- ===================== TEST C ===================== -->
+
+        <h3>Test C — Effect of the grid size n (discretization accuracy)</h3>
+        <p>
+        In this final test I fixed <span class="mono">T = 1</span> and <span class="mono">λ = 3</span>,
+        and increased the number of subintervals <span class="mono">n</span>. This isolates the effect
+        of the Bernoulli-grid approximation.
+        </p>
+
+        <h4>C1 — n = 100 (coarse grid)</h4>
+        <p>
+        The time step is Δt = 0.01. The distribution of <span class="mono">N(1)</span> already has a
+        Poisson(3)-like shape, though the histogram is somewhat jagged because the discretization is
+        still relatively coarse.
+        </p>
+
+        <figure>
+        <img src="images/hmwk10_testC_n100.png" alt="Test C1 — n = 100" class="screenshot">
+        <figcaption>Figure C1 — Coarse discretization (n = 100).</figcaption>
+        </figure>
+
+        <h4>C2 — n = 10000 (fine grid)</h4>
+        <p>
+        With Δt = 0.0001, the approximation is extremely fine. The histogram becomes smooth and nearly
+        indistinguishable from the theoretical Poisson(3) curve. The sample path also shows more
+        “micro-randomness” in the timing of jumps, consistent with a continuous-time Poisson process.
+        </p>
+
+        <figure>
+        <img src="images/hmwk10_testC_n10000.png" alt="Test C2 — n = 10000" class="screenshot">
+        <figcaption>Figure C2 — Fine discretization (n = 10000).</figcaption>
+        </figure>
+
+        <p>
+        Increasing <span class="mono">n</span> improves the accuracy of the Bernoulli approximation
+        without changing the underlying law of <span class="mono">N(T)</span>, which remains
+        Poisson(<span class="mono">λT</span>).
+        </p>
+
+        <h2>References</h2>
+        <ul>
+        <li>
+            <a href="https://en.wikipedia.org/wiki/Poisson_process" target="_blank" rel="noopener">
+            Wikipedia — Poisson process
+            </a>
+        </li>
+
+        <li>
+            <a href="https://en.wikipedia.org/wiki/Counting_process" target="_blank" rel="noopener">
+            Wikipedia — Counting process
+            </a>
+        </li>
+
+        <li>
+            <a href="https://en.wikipedia.org/wiki/Exponential_distribution" target="_blank" rel="noopener">
+            Wikipedia — Exponential distribution (inter-arrival times)
+            </a>
+        </li>
+
+        <li>
+            <a href="https://en.wikipedia.org/wiki/Poisson_distribution" target="_blank" rel="noopener">
+            Wikipedia — Poisson distribution
+            </a>
+        </li>
+
+        <li>
+            <a href="https://en.wikipedia.org/wiki/Measure_theory" target="_blank" rel="noopener">
+            Wikipedia — Measure theory
+            </a>
+        </li>
+
+        <li>
+            <a href="https://en.wikipedia.org/wiki/Probability_axioms" target="_blank" rel="noopener">
+            Wikipedia — Kolmogorov probability axioms
+            </a>
+        </li>
+
+        <li>
+            <a href="https://en.wikipedia.org/wiki/Sigma-algebra" target="_blank" rel="noopener">
+            Wikipedia — σ-algebra
+            </a>
+        </li>
+
+        <li>
+            <a href="https://plato.stanford.edu/entries/probability-interpret/" target="_blank" rel="noopener">
+            Stanford Encyclopedia of Philosophy — Interpretations of probability
+            </a>
+        </li>
+
+        <li>
+            <a href="https://www.stat.berkeley.edu/~stark/Java/Html/Poisson.htm" target="_blank" rel="noopener">
+            UC Berkeley — Poisson distribution & process notes
+            </a>
+        </li>
+
+        <li>
+            <a href="https://math.mit.edu/~dav/Probability%20and%20Measure.pdf" target="_blank" rel="noopener">
+            MIT — Probability and Measure (lecture notes)
+            </a>
+        </li>
+
+        <li>
+            <a href="https://www.openstax.org/books/introduction-statistics/pages/6-1-poisson-probability-distribution" target="_blank" rel="noopener">
+            OpenStax — Poisson distribution (intro explanation)
+            </a>
+        </li>
+        </ul>
+
+        <hr />
+        <p class="back"><a href="index.html">← Back to all homework</a></p>
+
+      </section>
+    </article>
+  </main>
+
+  <footer class="site-footer container">
+    <p>© <span id="y"></span> Statistics Homework · <strong>Anastasiia Baranovska</strong></p>
+  </footer>
+
+  <script>
+    // mette l'anno nel footer
+    document.getElementById('y').textContent = new Date().getFullYear();
+
+    function clamp(x, a, b) {
+      return Math.max(a, Math.min(b, x));
+    }
+
+    // pmf Poisson(k; lambdaT)
+    function poissonPMF(k, lambdaT) {
+      if (k < 0) return 0;
+      let p = Math.exp(-lambdaT);
+      for (let i = 1; i <= k; i++) {
+        p *= lambdaT / i;
+      }
+      return p;
+    }
+
+    // simulazione Bernoulli su griglia di n sottointervalli
+    function simulateCountingProcess(T, lambda, n, runs) {
+      const dt = T / n;
+      const p = clamp(lambda * dt, 0, 1);
+      const times = new Array(n + 1);
+      const counts = new Array(n + 1);
+      const finals = new Array(runs);
+
+      for (let i = 0; i <= n; i++) {
+        times[i] = i * dt;
+      }
+
+      for (let r = 0; r < runs; r++) {
+        let c = 0;
+        if (r === 0) counts[0] = 0;
+        for (let i = 1; i <= n; i++) {
+          if (Math.random() < p) c++;
+          if (r === 0) counts[i] = c; // solo il primo run per il grafico della path
+        }
+        finals[r] = c;
+      }
+      return { times, counts, finals };
+    }
+
+    function drawPath(canvas, times, counts, T) {
+      const ctx = canvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      const W = canvas.clientWidth || 600;
+      const H = canvas.clientHeight || 230;
+      canvas.width = W * dpr;
+      canvas.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+
+      const PAD = { l: 40, r: 12, t: 16, b: 30 };
+      const maxCount = counts.reduce((m, v) => Math.max(m, v), 0) || 1;
+
+      const xOf = t => PAD.l + (W - PAD.l - PAD.r) * (t / T);
+      const yOf = c => PAD.t + (H - PAD.t - PAD.b) * (1 - (c / maxCount));
+
+      // griglia
+      ctx.strokeStyle = '#e5e7eb';
+      ctx.lineWidth = 1;
+      for (let frac of [0, 0.25, 0.5, 0.75, 1]) {
+        const y = yOf(maxCount * frac);
+        ctx.beginPath();
+        ctx.moveTo(PAD.l, y);
+        ctx.lineTo(W - PAD.r, y);
+        ctx.stroke();
+      }
+
+      // assi / label
+      ctx.fillStyle = '#111827';
+      ctx.font = '12px Inter';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      for (let frac of [0, 0.5, 1]) {
+        const y = yOf(maxCount * frac);
+        ctx.fillText((maxCount * frac).toFixed(0), PAD.l - 6, y);
+      }
+
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      for (let frac of [0, 0.25, 0.5, 0.75, 1]) {
+        const t = T * frac;
+        const x = xOf(t);
+        ctx.beginPath();
+        ctx.moveTo(x, PAD.t);
+        ctx.lineTo(x, H - PAD.b);
+        ctx.stroke();
+        ctx.fillText(t.toFixed(2), x, H - PAD.b + 4);
+      }
+
+      // step function
+      ctx.strokeStyle = '#2563eb';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      let prevX = xOf(times[0]);
+      let prevY = yOf(counts[0]);
+      ctx.moveTo(prevX, prevY);
+
+      for (let i = 1; i < times.length; i++) {
+        const x = xOf(times[i]);
+        const y = yOf(counts[i]);
+        ctx.lineTo(x, prevY); // orizzontale
+        ctx.lineTo(x, y);     // salto verticale
+        prevX = x;
+        prevY = y;
+      }
+      ctx.stroke();
+    }
+
+    function drawHistogram(canvas, finals, lambdaT) {
+      const ctx = canvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      const W = canvas.clientWidth || 600;
+      const H = canvas.clientHeight || 230;
+      canvas.width = W * dpr;
+      canvas.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+
+      const PAD = { l: 40, r: 10, t: 16, b: 30 };
+      const runs = finals.length;
+
+      let maxFinal = 0;
+      for (let v of finals) if (v > maxFinal) maxFinal = v;
+
+      const theoryMean = lambdaT;
+      const theoryStd = Math.sqrt(lambdaT);
+      const kMaxTheory = Math.max(
+        maxFinal,
+        Math.ceil(theoryMean + 4 * theoryStd)
+      );
+      const kMax = Math.max(3, kMaxTheory);
+
+      const freq = new Array(kMax + 1).fill(0);
+      for (let v of finals) {
+        if (v <= kMax) freq[v] += 1;
+      }
+
+      const maxFreq = freq.reduce((m, v) => Math.max(m, v), 1);
+
+      const xOf = k =>
+        PAD.l + (W - PAD.l - PAD.r) * (k / Math.max(1, kMax));
+      const yOf = f =>
+        PAD.t + (H - PAD.t - PAD.b) * (1 - f / maxFreq);
+
+      // griglia
+      ctx.strokeStyle = '#e5e7eb';
+      ctx.lineWidth = 1;
+      for (let frac of [0, 0.25, 0.5, 0.75, 1]) {
+        const y = yOf(maxFreq * frac);
+        ctx.beginPath();
+        ctx.moveTo(PAD.l, y);
+        ctx.lineTo(W - PAD.r, y);
+        ctx.stroke();
+      }
+
+      // labels
+      ctx.fillStyle = '#111827';
+      ctx.font = '12px Inter';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      for (let frac of [0, 0.5, 1]) {
+        const y = yOf(maxFreq * frac);
+        ctx.fillText((maxFreq * frac).toFixed(0), PAD.l - 6, y);
+      }
+
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      for (let k = 0; k <= kMax; k++) {
+        const x = xOf(k);
+        if (k % 2 === 0 || k <= 5) {
+          ctx.fillText(String(k), x, H - PAD.b + 4);
+        }
+      }
+
+      const barWidth = (W - PAD.l - PAD.r) / Math.max(1, kMax + 1) * 0.7;
+
+      // barre empiriche
+      ctx.fillStyle = '#3b82f6';
+      for (let k = 0; k <= kMax; k++) {
+        const x = xOf(k);
+        const f = freq[k];
+        const y = yOf(f);
+        const height = (H - PAD.t - PAD.b) * (f / maxFreq);
+        ctx.fillRect(
+          x - barWidth / 2,
+          y,
+          barWidth,
+          Math.max(1, height)
+        );
+      }
+
+      // curva teorica Poisson
+      ctx.strokeStyle = '#f97316';
+      ctx.fillStyle = '#f97316';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      let first = true;
+      for (let k = 0; k <= kMax; k++) {
+        const theoCount = runs * poissonPMF(k, lambdaT);
+        const x = xOf(k);
+        const y = yOf(theoCount);
+        if (first) {
+          ctx.moveTo(x, y);
+          first = false;
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+      ctx.stroke();
+
+      for (let k = 0; k <= kMax; k++) {
+        const theoCount = runs * poissonPMF(k, lambdaT);
+        const x = xOf(k);
+        const y = yOf(theoCount);
+        ctx.beginPath();
+        ctx.arc(x, y, 2.5, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+    }
+
+    function runSimulation() {
+      const TInput = document.getElementById('cp-T');
+      const lambdaInput = document.getElementById('cp-lambda');
+      const nInput = document.getElementById('cp-n');
+      const runsInput = document.getElementById('cp-runs');
+
+      let T = parseFloat(TInput.value);
+      let lambda = parseFloat(lambdaInput.value);
+      let n = parseInt(nInput.value, 10);
+      let runs = parseInt(runsInput.value, 10);
+
+      if (!Number.isFinite(T) || T <= 0) T = 1;
+      if (!Number.isFinite(lambda) || lambda <= 0) lambda = 1;
+      if (!Number.isFinite(n) || n < 100) n = 100;
+      if (!Number.isFinite(runs) || runs < 1) runs = 1;
+
+      const lambdaT = lambda * T;
+
+      document.getElementById('cp-theory-lT').textContent = lambdaT.toFixed(3);
+      document.getElementById('cp-theory-mean').textContent = lambdaT.toFixed(3);
+      document.getElementById('cp-theory-var').textContent = lambdaT.toFixed(3);
+
+      const { times, counts, finals } = simulateCountingProcess(
+        T,
+        lambda,
+        n,
+        runs
+      );
+
+      const canvasPath = document.getElementById('cp-path');
+      const canvasHist = document.getElementById('cp-hist');
+
+      drawPath(canvasPath, times, counts, T);
+      drawHistogram(canvasHist, finals, lambdaT);
+
+      let sum = 0;
+      for (let v of finals) sum += v;
+      const mean = sum / finals.length;
+      let varSum = 0;
+      for (let v of finals) varSum += (v - mean) * (v - mean);
+      const variance = varSum / finals.length;
+
+      document.getElementById('cp-emp-mean').textContent = mean.toFixed(3);
+      document.getElementById('cp-emp-var').textContent = variance.toFixed(3);
+      document.getElementById('cp-emp-runs').textContent = String(runs);
+
+      const hint = document.getElementById('cp-hint');
+      hint.textContent =
+        'Δt = ' + (T / n).toExponential(2) +
+        ', p ≈ ' + clamp(lambda * (T / n), 0, 1).toExponential(2);
+    }
+
+    window.addEventListener('load', function () {
+    const btn = document.getElementById('cp-run');
+    if (btn) {
+        btn.addEventListener('click', runSimulation);
+    }
+    });
+
+  </script>
+</body>
+</html>
