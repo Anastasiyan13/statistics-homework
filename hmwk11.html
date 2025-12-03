@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HMWK 11 · Brownian Motion & Stochastic Differential Equations</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=8" />
+</head>
+
+<body>
+  <div class="bg-gradient" style="pointer-events:none; z-index:-1;"></div>
+
+  <header class="site-header container">
+    <a class="brand" href="index.html">📊 Statistics</a>
+    <nav class="nav">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="hmwk1.html" class="nav-link">HMWK 1</a>
+      <a href="hmwk2.html" class="nav-link">HMWK 2</a>
+      <a href="hmwk3.html" class="nav-link">HMWK 3</a>
+      <a href="hmwk4.html" class="nav-link">HMWK 4</a>
+      <a href="hmwk5.html" class="nav-link">HMWK 5</a>
+      <a href="hmwk6.html" class="nav-link">HMWK 6</a>
+      <a href="hmwk7.html" class="nav-link">HMWK 7</a>
+      <a href="hmwk8.html" class="nav-link">HMWK 8</a>
+      <a href="hmwk9.html" class="nav-link">HMWK 9</a>
+      <a href="hmwk10.html" class="nav-link">HMWK 10</a>
+      <a href="hmwk11.html" class="nav-link active">HMWK 11</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="post glass">
+
+      <div class="post-meta">
+        <span class="badge">HMWK 11</span>
+        <span>—</span>
+        <span>Brownian Motion & Stochastic Differential Equations</span>
+      </div>
+
+      <h1>From Random Walks to Brownian Motion (and beyond)</h1>
+
+      <p>
+        In Homework 7 I simulated a <strong>discrete random walk</strong> with steps \(+1\) or \(-1\).
+        In this assignment I move to the <strong>continuous-time limit</strong> and simulate a
+        <em>Wiener process</em> (standard Brownian motion) using the
+        <strong>Euler–Maruyama method</strong> for stochastic differential
+        equations (SDEs). Optionally, I generalize the simulator to handle
+        more general SDEs of the form
+        \[
+          dX_t = \mu(X_t,t)\,dt + \sigma(X_t,t)\,dW_t.
+        \]
+      </p>
+
+      <h2>1) Mathematical Setup</h2>
+
+      <h3>1.1 Wiener process as a limit of random walks</h3>
+      <p>
+        A standard <strong>Wiener process</strong> \(W_t\) (Brownian motion) is a continuous-time
+        stochastic process satisfying:
+      </p>
+      <ul>
+        <li>\(W_0 = 0\).</li>
+        <li>Independent increments.</li>
+        <li>\(W_t - W_s \sim \mathcal{N}(0, t-s)\) for \(0 \le s &lt; t\).</li>
+        <li>Paths are continuous (but nowhere differentiable).</li>
+      </ul>
+      <p>
+        Intuitively, we can obtain \(W_t\) as the limit of a symmetric random walk with time step
+        \(\Delta t\) and step size proportional to \(\sqrt{\Delta t}\).
+      </p>
+
+      <h3>1.2 Euler–Maruyama for SDEs</h3>
+      <p>
+        Consider a general SDE:
+      </p>
+      <p class="mono">
+        dX<sub>t</sub> = μ(X<sub>t</sub>, t) dt + σ(X<sub>t</sub>, t) dW<sub>t</sub>.
+      </p>
+      <p>
+        On a discrete grid \(t_0, t_1, \dots, t_n\) with uniform step
+        \(\Delta t = T/n\), the <strong>Euler–Maruyama approximation</strong> is:
+      </p>
+      <p class="mono">
+        X<sub>k+1</sub> = X<sub>k</sub> + μ(X<sub>k</sub>, t<sub>k</sub>) Δt
+        + σ(X<sub>k</sub>, t<sub>k</sub>) √(Δt) Z<sub>k</sub>,
+      </p>
+      <p>
+        where \(Z_k \sim \mathcal{N}(0,1)\) are independent standard normals.
+      </p>
+      <p>
+        A <strong>pure Wiener process</strong> corresponds to
+        \(\mu(x,t) \equiv 0\), \(\sigma(x,t) \equiv 1\), so
+      </p>
+      <p class="mono">
+        W<sub>k+1</sub> = W<sub>k</sub> + √(Δt) Z<sub>k</sub>.
+      </p>
+
+      <h3>1.3 Generating Normal Random Variables (Box–Muller)</h3>
+      <p>
+        The simulator needs standard normal variables \(Z \sim \mathcal{N}(0,1)\).
+        I generate them from two independent Uniform(0,1) variables \(U_1, U_2\)
+        using the <strong>Box–Muller transform</strong>:
+      </p>
+      <p class="mono">
+        Z = √(−2 ln U<sub>1</sub>) · cos(2π U<sub>2</sub>).
+      </p>
+      <p>
+        In JavaScript, I approximate Uniform(0,1) by <code>Math.random()</code>.
+      </p>
+
+      <hr />
+
+      <h2>2) Simulator for Standard Brownian Motion (Wiener Process)</h2>
+
+      <p>
+        In this first interactive tool I fix \(\mu(x,t) = 0\) and \(\sigma(x,t) = 1\)
+        and simulate a standard Brownian motion starting at \(W_0 = 0\).
+        I allow the user to choose the time horizon \(T\), the number of time steps \(n\),
+        and the number of paths to visualize.
+      </p>
+
+      <section class="tool">
+        <h3>2.1 Parameters</h3>
+
+        <div class="grid grid-2">
+          <label class="field">
+            <span>Total time horizon T</span>
+            <input id="bm-T" type="number" step="0.1" value="1" min="0.1" />
+          </label>
+
+          <label class="field">
+            <span>Number of time steps n</span>
+            <input id="bm-n" type="number" step="1" value="200" min="10" />
+          </label>
+
+          <label class="field">
+            <span>Number of simulated paths</span>
+            <input id="bm-paths" type="number" step="1" value="5" min="1" max="50" />
+          </label>
+
+          <label class="field">
+            <span>Volatility σ (scales the Brownian motion)</span>
+            <input id="bm-sigma" type="number" step="0.1" value="1" min="0" />
+          </label>
+        </div>
+
+        <button id="bm-run" class="btn primary">Simulate Brownian motion</button>
+
+        <p class="hint" id="bm-hint">
+          This will simulate paths of W<sub>t</sub> using Euler–Maruyama with
+          Δt = T / n and increments √(Δt) · Z.
+        </p>
+
+        <div style="border:1px solid var(--border,#e5e7eb);border-radius:12px;
+                    padding:6px;background:#fafafa;">
+        <canvas id="bm-canvas" style="width:100%;height:260px;display:block;"></canvas>
+        <p id="bm-placeholder" class="muted small" style="margin-top:4px;">
+            The plot will appear here after you run the simulation.
+        </p>
+        </div>
+
+        <p class="note">
+          <strong>Note.</strong> For a standard Brownian motion,
+          \(W_T \sim \mathcal{N}(0, T)\). With volatility σ,
+          \(X_T = σ W_T\) has variance σ² T.
+        </p>
+      </section>
+
+      <hr />
+
+      <h2>3) General SDE Simulator (Optional Extension)</h2>
+
+      <p>
+        In this second tool I generalize the simulator to an arbitrary SDE
+      </p>
+      <p class="mono">
+        dX<sub>t</sub> = μ(X<sub>t</sub>, t) dt + σ(X<sub>t</sub>, t) dW<sub>t</sub>.
+      </p>
+      <p>
+        The user specifies μ and σ as <strong>JavaScript expressions</strong>
+        in the variables <code>x</code> and <code>t</code>, for example:
+      </p>
+      <ul>
+        <li><strong>Drifted Brownian motion:</strong> μ(x,t) = 0.5, σ(x,t) = 1.</li>
+        <li><strong>Ornstein–Uhlenbeck:</strong> μ(x,t) = -0.8 * x, σ(x,t) = 0.5.</li>
+      </ul>
+
+      <section class="tool">
+        <h3>3.1 Parameters &amp; SDE definition</h3>
+
+        <div class="grid grid-2">
+          <label class="field">
+            <span>Initial value X₀</span>
+            <input id="sde-x0" type="number" step="0.1" value="0" />
+          </label>
+
+          <label class="field">
+            <span>Total time horizon T</span>
+            <input id="sde-T" type="number" step="0.1" value="1" min="0.1" />
+          </label>
+
+          <label class="field">
+            <span>Number of time steps n</span>
+            <input id="sde-n" type="number" step="1" value="300" min="10" />
+          </label>
+
+          <label class="field">
+            <span>Number of simulated paths</span>
+            <input id="sde-paths" type="number" step="1" value="5" min="1" max="50" />
+          </label>
+        </div>
+
+        <div class="grid grid-2">
+          <label class="field">
+            <span>μ(x, t)</span>
+            <input id="sde-mu" type="text" value="-0.5 * x" />
+            <small>JavaScript expression; variables: <code>x</code>, <code>t</code>.</small>
+          </label>
+
+          <label class="field">
+            <span>σ(x, t)</span>
+            <input id="sde-sigma" type="text" value="1" />
+            <small>Must be non-negative; use <code>Math.sqrt</code> if needed.</small>
+          </label>
+        </div>
+
+        <button id="sde-run" class="btn primary">Simulate SDE</button>
+
+        <p class="hint" id="sde-hint">
+          The simulator applies Euler–Maruyama:
+          X<sub>k+1</sub> = X<sub>k</sub> + μ(X<sub>k</sub>, t<sub>k</sub>) Δt
+          + σ(X<sub>k</sub>, t<sub>k</sub>) √(Δt) Z<sub>k</sub>.
+        </p>
+
+        <div style="border:1px solid var(--border,#e5e7eb);border-radius:12px;
+                padding:6px;background:#fafafa;">
+        <canvas id="sde-canvas" style="width:100%;height:260px;display:block;"></canvas>
+        <p id="sde-placeholder" class="muted small" style="margin-top:4px;">
+        The plot will appear here after you run the simulation.
+        </p>
+        </div>
+
+
+
+        <div class="summary">
+          <p>
+            <strong>Summary at final time T:</strong>
+            mean(X<sub>T</sub>) ≈ <span id="sde-mean">–</span>,
+            var(X<sub>T</sub>) ≈ <span id="sde-var">–</span>
+            (empirical across simulated paths).
+          </p>
+        </div>
+      </section>
+
+      <hr />
+
+      <h2>4) Discussion</h2>
+
+      <h3>4.1 Connection to Homework 7 (Random Walk)</h3>
+      <p>
+        In Homework 7, the random walk evolved with discrete steps \(+1\) and \(-1\).
+        Here I replace those fixed steps with <em>Gaussian increments</em>
+        of size √(Δt) · Z. As Δt → 0, the resulting process converges (in distribution)
+        to a Wiener process. Conceptually, this homework is the continuous-time
+        counterpart of the random walk model.
+      </p>
+
+      <h3>4.2 Why Euler–Maruyama?</h3>
+      <p>
+        The Euler–Maruyama method is the stochastic analogue of the standard Euler
+        method for ordinary differential equations. It is simple to implement and,
+        for sufficiently small Δt, provides a good approximation of the path
+        distribution of the underlying SDE. More sophisticated schemes (Milstein,
+        higher-order methods) exist, but Euler–Maruyama is a natural first step.
+      </p>
+
+    </article>
+  </main>
+
+  <footer class="site-footer container">
+    <p>© <span id="y"></span> Statistics Homework · <strong>Anastasiia Baranovska</strong></p>
+  </footer>
+
+  <script>
+    // ===== Basic utilities =====
+    document.getElementById('y').textContent = new Date().getFullYear();
+
+    function clamp(x, a, b) {
+      return Math.max(a, Math.min(b, x));
+    }
+
+    // Standard normal via Box–Muller
+    function randn() {
+      let u1 = 0, u2 = 0;
+      // avoid log(0)
+      while (u1 === 0) u1 = Math.random();
+      while (u2 === 0) u2 = Math.random();
+      const r = Math.sqrt(-2 * Math.log(u1));
+      const theta = 2 * Math.PI * u2;
+      return r * Math.cos(theta); // N(0,1)
+    }
+
+    // Compute mean and variance of an array
+    function meanVar(arr) {
+      const n = arr.length;
+      if (n === 0) return { mean: NaN, var: NaN };
+      let m = 0;
+      for (let x of arr) m += x;
+      m /= n;
+      let v = 0;
+      for (let x of arr) v += (x - m) * (x - m);
+      v /= n;
+      return { mean: m, var: v };
+    }
+
+    // Resize-aware canvas setup
+    function prepareCanvas(canvas) {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      const W = rect.width || canvas.clientWidth || 600;
+      const H = rect.height || canvas.clientHeight || 300;
+      canvas.width = W * dpr;
+      canvas.height = H * dpr;
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+      return { ctx, W, H };
+    }
+
+    // Generic function to draw multiple paths on a canvas
+    function drawPaths(canvasId, times, paths, options = {}) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      const { ctx, W, H } = prepareCanvas(canvas);
+
+      if (!times || times.length === 0 || !paths || paths.length === 0) return;
+
+      const PAD = { l: 48, r: 16, t: 16, b: 32 };
+
+      // Compute global min/max over all paths
+      let minX = times[0], maxX = times[times.length - 1];
+      let minY = Infinity, maxY = -Infinity;
+      for (const path of paths) {
+        for (const y of path) {
+          if (!Number.isFinite(y)) continue;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+      if (!Number.isFinite(minY) || !Number.isFinite(maxY)) {
+        minY = -1; maxY = 1;
+      }
+      if (minY === maxY) {
+        const eps = (Math.abs(minY) || 1) * 0.1;
+        minY -= eps; maxY += eps;
+      }
+
+      const xOf = (t) =>
+        PAD.l + (W - PAD.l - PAD.r) * (t - minX) / (maxX - minX || 1);
+      const yOf = (y) =>
+        PAD.t + (H - PAD.t - PAD.b) * (1 - (y - minY) / (maxY - minY || 1));
+
+      // Background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, W, H);
+
+      // Grid lines in time
+      ctx.strokeStyle = '#e5e7eb';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      const nGrid = 6;
+      for (let i = 0; i <= nGrid; i++) {
+        const t = minX + (maxX - minX) * i / nGrid;
+        const x = xOf(t);
+        ctx.moveTo(x, PAD.t);
+        ctx.lineTo(x, H - PAD.b);
+      }
+      ctx.stroke();
+
+      // Horizontal grid lines in value
+      ctx.beginPath();
+      for (let i = 0; i <= nGrid; i++) {
+        const yVal = minY + (maxY - minY) * i / nGrid;
+        const y = yOf(yVal);
+        ctx.moveTo(PAD.l, y);
+        ctx.lineTo(W - PAD.r, y);
+      }
+      ctx.stroke();
+
+      // Axes
+      ctx.strokeStyle = '#9ca3af';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      // time axis
+      ctx.moveTo(PAD.l, H - PAD.b);
+      ctx.lineTo(W - PAD.r, H - PAD.b);
+      // 0-level axis if in range
+      if (minY < 0 && maxY > 0) {
+        const y0 = yOf(0);
+        ctx.moveTo(PAD.l, y0);
+        ctx.lineTo(W - PAD.r, y0);
+      }
+      ctx.stroke();
+
+      // Labels
+      ctx.fillStyle = '#111827';
+      ctx.font = '12px Inter';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText('time t', (PAD.l + W - PAD.r) / 2, H - PAD.b + 8);
+
+      ctx.save();
+      ctx.translate(12, (PAD.t + H - PAD.b) / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(options.yLabel || 'X(t)', 0, 0);
+      ctx.restore();
+
+      // Path colors (simple palette)
+      const colors = [
+        '#1d4ed8', '#16a34a', '#dc2626', '#7c3aed',
+        '#ea580c', '#0f766e', '#4b5563', '#b91c1c'
+      ];
+
+      ctx.lineWidth = 1.5;
+      for (let p = 0; p < paths.length; p++) {
+        const path = paths[p];
+        const col = colors[p % colors.length];
+        ctx.strokeStyle = col;
+        ctx.beginPath();
+        for (let i = 0; i < times.length; i++) {
+          const x = xOf(times[i]);
+          const y = yOf(path[i]);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+    }
+
+    function hidePlaceholder(id) {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    }
+
+    // ===== 2) Brownian motion (Wiener) simulator =====
+    function runBrownian() {
+      hidePlaceholder('bm-placeholder');
+      const T = Math.max(0.0001, Number(document.getElementById('bm-T').value) || 1);
+      let n = Math.floor(Number(document.getElementById('bm-n').value) || 200);
+      let nPaths = Math.floor(Number(document.getElementById('bm-paths').value) || 5);
+      const sigma = Math.max(0, Number(document.getElementById('bm-sigma').value) || 1);
+
+      n = clamp(n, 10, 5000);
+      nPaths = clamp(nPaths, 1, 200);
+
+      const dt = T / n;
+      const times = [];
+      for (let k = 0; k <= n; k++) {
+        times.push(k * dt);
+      }
+
+      const paths = [];
+      for (let p = 0; p < nPaths; p++) {
+        const path = new Array(n + 1);
+        let x = 0;
+        path[0] = x;
+        for (let k = 0; k < n; k++) {
+          const z = randn();
+          x = x + sigma * Math.sqrt(dt) * z;
+          path[k + 1] = x;
+        }
+        paths.push(path);
+      }
+
+      drawPaths('bm-canvas', times, paths, { yLabel: 'W(t)' });
+
+      const hint = document.getElementById('bm-hint');
+      hint.textContent =
+        'Simulated ' + nPaths + ' paths with Δt = ' +
+        dt.toExponential(2) +
+        ', Var[X(T)] ≈ σ²T = ' + (sigma * sigma * T).toFixed(3) + '.';
+    }
+
+    // ===== 3) General SDE simulator =====
+    function runSDE() {
+      hidePlaceholder('sde-placeholder');
+      const x0 = Number(document.getElementById('sde-x0').value) || 0;
+      const T = Math.max(0.0001, Number(document.getElementById('sde-T').value) || 1);
+      let n = Math.floor(Number(document.getElementById('sde-n').value) || 300);
+      let nPaths = Math.floor(Number(document.getElementById('sde-paths').value) || 5);
+
+      n = clamp(n, 10, 5000);
+      nPaths = clamp(nPaths, 1, 200);
+
+      const muExpr = document.getElementById('sde-mu').value || '0';
+      const sigmaExpr = document.getElementById('sde-sigma').value || '1';
+
+      let muFn, sigmaFn;
+      try {
+        muFn = new Function('x', 't', 'return ' + muExpr + ';');
+        sigmaFn = new Function('x', 't', 'return ' + sigmaExpr + ';');
+        // quick test
+        void muFn(x0, 0);
+        void sigmaFn(x0, 0);
+      } catch (e) {
+        alert('Error in μ or σ expression: ' + e.message);
+        return;
+      }
+
+      const dt = T / n;
+      const sqrtDt = Math.sqrt(dt);
+
+      const times = [];
+      for (let k = 0; k <= n; k++) {
+        times.push(k * dt);
+      }
+
+      const paths = [];
+      const finalValues = [];
+
+      for (let p = 0; p < nPaths; p++) {
+        const path = new Array(n + 1);
+        let x = x0;
+        path[0] = x;
+        for (let k = 0; k < n; k++) {
+          const t = times[k];
+          let mu = muFn(x, t);
+          let sig = sigmaFn(x, t);
+          if (!Number.isFinite(mu)) mu = 0;
+          if (!Number.isFinite(sig)) sig = 0;
+          sig = Math.max(sig, 0);
+
+          const z = randn();
+          x = x + mu * dt + sig * sqrtDt * z;
+          path[k + 1] = x;
+        }
+        paths.push(path);
+        finalValues.push(x);
+      }
+
+      drawPaths('sde-canvas', times, paths, { yLabel: 'X(t)' });
+
+      const stats = meanVar(finalValues);
+      document.getElementById('sde-mean').textContent = stats.mean.toFixed(3);
+      document.getElementById('sde-var').textContent = stats.var.toFixed(3);
+
+      const hint = document.getElementById('sde-hint');
+      hint.textContent =
+        'Simulated ' + nPaths + ' paths with Δt = ' + dt.toExponential(2) +
+        '. μ(x,t) = ' + muExpr + ', σ(x,t) = ' + sigmaExpr + '.';
+    }
+
+    // Wire up buttons
+    window.addEventListener('load', function () {
+      const bmBtn = document.getElementById('bm-run');
+      if (bmBtn) bmBtn.addEventListener('click', runBrownian);
+
+      const sdeBtn = document.getElementById('sde-run');
+      if (sdeBtn) sdeBtn.addEventListener('click', runSDE);
+    });
+  </script>
+</body>
+</html>
